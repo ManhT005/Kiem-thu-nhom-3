@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -117,7 +117,13 @@
             required
           />
 
-         <button type="button" id="btnSaveCategory" style="background: #4caf50; margin-top: auto;">💾 Lưu</button>
+          <button
+            type="button"
+            id="btnSaveCategory"
+            style="background: #4caf50; margin-top: auto"
+          >
+            💾 Lưu
+          </button>
         </form>
       </div>
     </div>
@@ -126,37 +132,123 @@
     <div id="productModal" class="modal">
       <div class="modal-content">
         <span class="close" id="closeProductModal">&times;</span>
-        
+
         <h3 id="modalTitle">Thêm sản phẩm</h3>
         <form id="productForm">
           <label>Tên sản phẩm *</label>
-          <input type="text" id="productName" placeholder="Nhập tên sản phẩm" required />
+          <input
+            type="text"
+            id="productName"
+            placeholder="Nhập tên sản phẩm"
+            required
+          />
 
           <label>Giá sản phẩm (VND) *</label>
-          <input type="number" id="productPrice" placeholder="Nhập giá" min="0" required />
+          <input
+            type="number"
+            id="productPrice"
+            placeholder="Nhập giá"
+            min="0"
+            required
+          />
 
           <label>Danh mục</label>
-          <div id="productCategoriesContainer" style="margin: 10px 0; border: 1px solid #ccc; padding: 10px; border-radius: 5px; min-height: 100px;">
-            </div>
+          <div
+            id="productCategoriesContainer"
+            style="
+              margin: 10px 0;
+              border: 1px solid #ccc;
+              padding: 10px;
+              border-radius: 5px;
+              min-height: 100px;
+            "
+          ></div>
 
           <label>Kích thước (Size)</label>
           <div class="size-container">
-             <label class="size-option"><input type="checkbox" name="productSize" value="S"> S</label>
-             <label class="size-option"><input type="checkbox" name="productSize" value="M"> M</label>
-             <label class="size-option"><input type="checkbox" name="productSize" value="L"> L</label>
-             <label class="size-option"><input type="checkbox" name="productSize" value="XL"> XL</label>
-             <label class="size-option"><input type="checkbox" name="productSize" value="XXL"> XXL</label>
+            <label class="size-option"
+              ><input type="checkbox" name="productSize" value="S" /> S
+              <input
+                class="size-stock"
+                data-size="S"
+                type="number"
+                min="0"
+                value="0"
+                disabled
+            /></label>
+            <label class="size-option"
+              ><input type="checkbox" name="productSize" value="M" /> M
+              <input
+                class="size-stock"
+                data-size="M"
+                type="number"
+                min="0"
+                value="0"
+                disabled
+            /></label>
+            <label class="size-option"
+              ><input type="checkbox" name="productSize" value="L" /> L
+              <input
+                class="size-stock"
+                data-size="L"
+                type="number"
+                min="0"
+                value="0"
+                disabled
+            /></label>
+            <label class="size-option"
+              ><input type="checkbox" name="productSize" value="XL" /> XL
+              <input
+                class="size-stock"
+                data-size="XL"
+                type="number"
+                min="0"
+                value="0"
+                disabled
+            /></label>
+            <label class="size-option"
+              ><input type="checkbox" name="productSize" value="XXL" /> XXL
+              <input
+                class="size-stock"
+                data-size="XXL"
+                type="number"
+                min="0"
+                value="0"
+                disabled
+            /></label>
           </div>
 
           <label>Mô tả</label>
-          <textarea id="productDesc" placeholder="Nhập mô tả sản phẩm" rows="3" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; resize: vertical;"></textarea>
-          
+          <textarea
+            id="productDesc"
+            placeholder="Nhập mô tả sản phẩm"
+            rows="3"
+            style="
+              width: 100%;
+              padding: 10px;
+              margin: 10px 0;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              resize: vertical;
+            "
+          ></textarea>
 
           <label>Hình ảnh</label>
           <div id="currentImage" style="display: none"></div>
-          <input type="file" id="productImage" accept="image/*" style="margin-bottom: 10px" />
+          <input
+            type="file"
+            id="productImage"
+            accept="image/*"
+            style="margin-bottom: 10px"
+          />
 
-          <button type="button" id="btnSaveProduct" style="background: #4caf50; margin-top: auto;">💾Lưu</button>
+          <button
+            type="button"
+            id="btnSaveProduct"
+            style="background: #4caf50; margin-top: auto"
+          >
+            💾Lưu
+          </button>
         </form>
       </div>
     </div>

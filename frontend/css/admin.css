@@ -148,7 +148,6 @@ button.delete-btn:hover {
   background: #d32f2f;
 }
 
-
 /* ==========================
    MODAL - SỬA LẠI
 ========================== */
@@ -174,7 +173,7 @@ button.delete-btn:hover {
   position: relative;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
   animation: slideDown 0.3s ease;
-  
+
   /* --- PHẦN QUAN TRỌNG ĐỂ SCROLL --- */
   max-height: 85vh; /* Chiều cao tối đa bằng 85% màn hình */
   overflow-y: auto; /* Nếu dài hơn thì hiện thanh cuộn */
@@ -213,10 +212,13 @@ button.delete-btn:hover {
   width: auto; /* Reset width 100% của input chung */
   margin-right: 5px;
 }
+.size-option .size-stock {
+  width: 70px;
+  margin-left: 5px;
+  padding: 5px;
+}
 
 /*--- phần sửa model*/
-
-
 
 @keyframes slideDown {
   from {

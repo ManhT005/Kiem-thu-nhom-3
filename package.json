@@ -1,4 +1,10 @@
 {
+  "name": "ptda",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev"
+  },
   "dependencies": {
     "cors": "^2.8.5"
   }
