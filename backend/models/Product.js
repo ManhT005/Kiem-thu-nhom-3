@@ -13,7 +13,6 @@ const Product = {
     `;
 
     db.query(sql, callback);
-
   },
 
   getById: (id, callback) => {
@@ -29,21 +28,32 @@ const Product = {
   },
 
   create: (product, callback) => {
-    const sql = "INSERT INTO SanPham (tenSP, gia, moTa, anhSP) VALUES (?, ?, ?, ?)";
-    db.query(sql, [product.tenSP, product.gia, product.moTa, product.anhSP], callback);
+    const sql =
+      "INSERT INTO SanPham (tenSP, gia, moTa, anhSP) VALUES (?, ?, ?, ?)";
+    db.query(
+      sql,
+      [product.tenSP, product.gia, product.moTa, product.anhSP],
+      callback,
+    );
   },
 
   // Hàm initInventory cũ
   initInventory: (maSP, sizesData, callback) => {
     if (!sizesData || sizesData.length === 0) return callback(null);
-    const values = sizesData.map(s => [maSP, s.maSize, s.soLuongTon]);
-    const sql = "INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon) VALUES ?";
+    const values = sizesData.map((s) => [maSP, s.maSize, s.soLuongTon]);
+    const sql =
+      "INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon) VALUES ?";
     db.query(sql, [values], callback);
   },
 
   update: (id, product, callback) => {
-    const sql = "UPDATE SanPham SET tenSP = ?, gia = ?, moTa = ?, anhSP = ? WHERE maSP = ?";
-    db.query(sql, [product.tenSP, product.gia, product.moTa, product.anhSP, id], callback);
+    const sql =
+      "UPDATE SanPham SET tenSP = ?, gia = ?, moTa = ?, anhSP = ? WHERE maSP = ?";
+    db.query(
+      sql,
+      [product.tenSP, product.gia, product.moTa, product.anhSP, id],
+      callback,
+    );
   },
 
   updateInventory: (maSP, soLuong, callback) => {
@@ -70,28 +80,42 @@ const Product = {
   },
 
   // 1. Thêm size vào kho dựa trên TÊN SIZE
- // 1. Thêm size vào kho dựa trên TÊN SIZE (Logic: Tìm ID trước -> Insert sau)
+  // 1. Thêm size vào kho dựa trên TÊN SIZE (Logic: Tìm ID trước -> Insert sau)
   addSizeByName: (maSP, listTenSize, soLuongTon, callback) => {
     if (!listTenSize || listTenSize.length === 0) {
-        return callback(null);
+      return callback(null);
     }
-    
+    const sizeNames = listTenSize.map((size) =>
+      typeof size === "string" ? size : size.tenSize,
+    );
+
     // Bước 1: Tìm maSize tương ứng với các tên size (VD: ['S', 'M'] -> ra ID 1, 2)
     const sqlFind = "SELECT maSize, tenSize FROM Size WHERE tenSize IN (?)";
-    
-    db.query(sqlFind, [listTenSize], (err, sizesFound) => {
-        if (err) return callback(err);
-        if (!sizesFound || sizesFound.length === 0) return callback(null);
 
-        // Bước 2: Tạo mảng dữ liệu để Insert nhiều dòng cùng lúc
-        // Format của thư viện mysql: [[maSP, maSize, soLuongTon], [maSP, maSize, soLuongTon]]
-        const values = sizesFound.map(s => [maSP, s.maSize, soLuongTon]);
-        
-        const sqlInsert = "INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon) VALUES ?";
-        db.query(sqlInsert, [values], (err, res) => {
-            if (err) return callback(err);
-            callback(null, res);
-        });
+    db.query(sqlFind, [sizeNames], (err, sizesFound) => {
+      if (err) return callback(err);
+      if (!sizesFound || sizesFound.length === 0) return callback(null);
+
+      // Bước 2: Tạo mảng dữ liệu để Insert nhiều dòng cùng lúc
+      // Format của thư viện mysql: [[maSP, maSize, soLuongTon], [maSP, maSize, soLuongTon]]
+      const values = sizesFound.map((s) => {
+        const requestedSize = listTenSize.find(
+          (size) =>
+            (typeof size === "string" ? size : size.tenSize) === s.tenSize,
+        );
+        const quantity =
+          typeof requestedSize === "string"
+            ? soLuongTon
+            : Number(requestedSize?.soLuongTon || 0);
+        return [maSP, s.maSize, quantity];
+      });
+
+      const sqlInsert =
+        "INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon) VALUES ?";
+      db.query(sqlInsert, [values], (err, res) => {
+        if (err) return callback(err);
+        callback(null, res);
+      });
     });
   },
 
@@ -102,16 +126,19 @@ const Product = {
   },
 
   // === THÊM HÀM MỚI: ĐỒNG BỘ SIZE (Sync) ===
-  syncSizes: (maSP, listTenSize, callback) => {
+  syncSizes: (maSP, listTenSize, soLuongTon, callback) => {
     // Trường hợp 1: Nếu danh sách gửi lên Rỗng -> Xóa hết size của SP này
     if (!listTenSize || listTenSize.length === 0) {
-        const sql = "DELETE FROM ChiTietSanPham WHERE maSP = ?";
-        return db.query(sql, [maSP], callback);
+      const sql = "DELETE FROM ChiTietSanPham WHERE maSP = ?";
+      return db.query(sql, [maSP], callback);
     }
 
     // Trường hợp 2: Có danh sách size
     // Bước A: Xóa những size KHÔNG nằm trong danh sách được tích (Bỏ tích)
     // Cú pháp: DELETE bảng_phụ FROM bảng_phụ JOIN ... WHERE ... NOT IN (...)
+    const sizeNames = listTenSize.map((size) =>
+      typeof size === "string" ? size : size.tenSize,
+    );
     const sqlDelete = `
         DELETE ct 
         FROM ChiTietSanPham ct 
@@ -119,39 +146,44 @@ const Product = {
         WHERE ct.maSP = ? AND s.tenSize NOT IN (?)
     `;
 
-    db.query(sqlDelete, [maSP, listTenSize], (err) => {
-        if (err) return callback(err);
+    db.query(sqlDelete, [maSP, sizeNames], (err) => {
+      if (err) return callback(err);
 
-        // Bước B: Thêm mới hoặc Giữ nguyên size được tích
-        // Dùng vòng lặp để xử lý từng size
-        // Logic SQL: INSERT ... ON DUPLICATE KEY UPDATE ...
-        // Nếu chưa có -> Insert (số lượng 0). Nếu có rồi -> Giữ nguyên (Update maSP=maSP để không đổi gì cả)
-        
-        const sqlUpsert = `
+      // Bước B: Thêm mới hoặc Giữ nguyên size được tích
+      // Dùng vòng lặp để xử lý từng size
+      // Logic SQL: INSERT ... ON DUPLICATE KEY UPDATE ...
+      // Nếu chưa có -> Insert (số lượng 0). Nếu có rồi -> Giữ nguyên (Update maSP=maSP để không đổi gì cả)
+
+      const sqlUpsert = `
             INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon) 
-            SELECT ?, maSize, 0 
+            SELECT ?, maSize, ?
             FROM Size WHERE tenSize = ? 
-            ON DUPLICATE KEY UPDATE maSP = VALUES(maSP)
-        `; 
-        // Note: UPDATE maSP = VALUES(maSP) là mẹo của MySQL để báo rằng "Đã tồn tại thì đừng làm gì cả, giữ nguyên dữ liệu cũ"
+            ON DUPLICATE KEY UPDATE soLuongTon = VALUES(soLuongTon)
+        `;
+      // Note: UPDATE maSP = VALUES(maSP) là mẹo của MySQL để báo rằng "Đã tồn tại thì đừng làm gì cả, giữ nguyên dữ liệu cũ"
 
-        let completed = 0;
-        let hasError = false;
+      let completed = 0;
+      let hasError = false;
 
-        listTenSize.forEach(tenSize => {
-            db.query(sqlUpsert, [maSP, tenSize], (err) => {
-                if (hasError) return;
-                if (err) { hasError = true; return callback(err); }
-                
-                completed++;
-                if (completed === listTenSize.length) {
-                    callback(null, { message: "Sync complete" });
-                }
-            });
+      listTenSize.forEach((size) => {
+        const tenSize = typeof size === "string" ? size : size.tenSize;
+        const quantity =
+          typeof size === "string" ? soLuongTon : Number(size.soLuongTon || 0);
+        db.query(sqlUpsert, [maSP, quantity, tenSize], (err) => {
+          if (hasError) return;
+          if (err) {
+            hasError = true;
+            return callback(err);
+          }
+
+          completed++;
+          if (completed === listTenSize.length) {
+            callback(null, { message: "Sync complete" });
+          }
         });
+      });
     });
   },
-  
 };
 
 export default Product;
