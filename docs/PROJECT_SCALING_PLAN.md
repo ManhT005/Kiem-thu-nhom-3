@@ -11,7 +11,7 @@
 Hệ thống hiện tại đã xây dựng được khung chức năng cơ bản:
 - Xác thực tài khoản (JWT, Bcrypt) với phân quyền sơ khai (`user`, `staff`, `admin`).
 - Xem, thêm, sửa, xóa sản phẩm và danh mục (Upload ảnh qua Multer).
-- Giỏ hàng và tạo đơn hàng cơ bản.
+- Giỏ hàng và tạo đơn hàng cơ bản 
 - Tích hợp cổng thanh toán MoMo Sandbox.
 
 ### 1.2. Khoảng trống nghiệp vụ cần mở rộng (Gaps Analysis)
