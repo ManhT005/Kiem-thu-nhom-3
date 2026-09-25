@@ -26,13 +26,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // ------------------- CHUYỂN TAB -------------------
   // Mặc định khi F5: Active tab đầu tiên (Users) và ẩn các tab khác
   const defaultTab = "users";
-  
+
   // Reset trạng thái hiển thị khi load trang
   tabs.forEach((t) => t.classList.remove("active"));
   tabContents.forEach((tc) => (tc.style.display = "none"));
 
   // Kích hoạt tab mặc định (Users)
-  document.querySelector(`.sidebar ul li[data-tab="${defaultTab}"]`).classList.add("active");
+  document
+    .querySelector(`.sidebar ul li[data-tab="${defaultTab}"]`)
+    .classList.add("active");
   document.getElementById(defaultTab).style.display = "block";
 
   // Xử lý sự kiện click chuyển tab
@@ -46,13 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
       tab.classList.add("active");
       const target = tab.dataset.tab;
       document.getElementById(target).style.display = "block";
-      
+
       // 3. Nếu chuyển sang tab sản phẩm hoặc danh mục thì load lại dữ liệu cho mới
-      if (target === 'products' && typeof renderProducts === 'function') {
-          renderProducts();
+      if (target === "products" && typeof renderProducts === "function") {
+        renderProducts();
       }
-      if (target === 'categories' && typeof renderCategories === 'function') {
-          renderCategories();
+      if (target === "categories" && typeof renderCategories === "function") {
+        renderCategories();
       }
     });
   });
@@ -67,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ------------------- FETCH API (có token) -------------------
   async function fetchAPI(endpoint, options = {}) {
     try {
-      const res = await fetch(`http://localhost:3000/api/${endpoint}`, {
+      const res = await fetch(`/api/${endpoint}`, {
         ...options,
         headers: {
           ...options.headers,
@@ -103,16 +105,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     users.forEach((u) => {
       const tr = document.createElement("tr");
-      
+
       const isCurrentUser = u.id === currentUser.id;
       const isAdmin = u.role === "admin";
-      
+
       // Tạo dropdown role
-      const roleOptions = isAdmin 
+      const roleOptions = isAdmin
         ? '<span style="font-weight: bold; color: #e91e63;">admin</span>'
         : `<select class="role-select" data-id="${u.id}">
-             <option value="user" ${u.role === 'user' ? 'selected' : ''}>user</option>
-             <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>staff</option>
+             <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
+             <option value="staff" ${u.role === "staff" ? "selected" : ""}>staff</option>
            </select>`;
 
       tr.innerHTML = `
@@ -121,13 +123,14 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${u.email}</td>
         <td>${roleOptions}</td>
         <td>
-          ${!isCurrentUser && !isAdmin ? 
-            `<button class="action-btn delete-btn" data-id="${u.id}">Xóa</button>` : 
-            '<span style="color: #999">-</span>'
+          ${
+            !isCurrentUser && !isAdmin
+              ? `<button class="action-btn delete-btn" data-id="${u.id}">Xóa</button>`
+              : '<span style="color: #999">-</span>'
           }
         </td>
       `;
-      
+
       tbody.appendChild(tr);
     });
 
@@ -136,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
       select.addEventListener("change", async (e) => {
         const userId = e.target.dataset.id;
         const newRole = e.target.value;
-        
+
         if (confirm(`Bạn có chắc muốn thay đổi quyền thành "${newRole}"?`)) {
           await updateUserRole(userId, newRole);
         } else {
@@ -198,7 +201,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
 
     if (orders.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chưa có đơn hàng</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="5" style="text-align:center">Chưa có đơn hàng</td></tr>';
       return;
     }
 
@@ -206,9 +210,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${o.id}</td>
-        <td>${o.user_name || 'N/A'}</td>
-        <td>${o.status || 'Đang xử lý'}</td>
-        <td>${o.date || 'N/A'}</td>
+        <td>${o.user_name || "N/A"}</td>
+        <td>${o.status || "Đang xử lý"}</td>
+        <td>${o.date || "N/A"}</td>
         <td><button class="action-btn edit-btn" data-id="${o.id}">Cập nhật</button></td>
       `;
       tbody.appendChild(tr);

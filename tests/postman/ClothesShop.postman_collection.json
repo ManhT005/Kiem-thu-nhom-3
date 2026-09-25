@@ -1,0 +1,107 @@
+{
+  "info": {
+    "name": "ClothesShop Phase 1 Smoke",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health is up",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('SUCCESS contract', () => pm.expect(pm.response.json().code).to.eql('SUCCESS'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unknown API returns 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/does-not-exist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('NOT_FOUND code', () => pm.expect(pm.response.json().code).to.eql('NOT_FOUND'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart requires authentication",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory requires authentication",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/kho"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Register rejects short password",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ten\": \"Smoke User\",\n  \"email\": \"invalid-email\",\n  \"matKhau\": \"short\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('VALIDATION_ERROR code', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

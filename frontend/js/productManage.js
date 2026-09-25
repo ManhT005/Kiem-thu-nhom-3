@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchData(endpoint) {
     try {
-      const res = await fetch(`http://localhost:3000/api/${endpoint}`, {
+      const res = await fetch(`/api/${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return await res.json();
@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.deleteProduct = async function (id) {
     if (!confirm("Chắc chắn xóa?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/products/${id}`, {
+      const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -216,8 +216,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Gửi API
       const url = editingProductId
-        ? `http://localhost:3000/api/products/${editingProductId}`
-        : "http://localhost:3000/api/products";
+        ? `/api/products/${editingProductId}`
+        : "/api/products";
       const method = editingProductId ? "PUT" : "POST";
 
       try {

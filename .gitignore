@@ -1,2 +1,6 @@
 node_modules/
-*.sql
+.env
+backend/.env
+*.local.sql
+*.dump.sql
+database/local/
