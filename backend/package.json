@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "db:reset": "node scripts/db-reset.js",
+    "db:seed": "node scripts/db-seed.js"
   },
   "keywords": [
     "web",
@@ -29,7 +31,8 @@
     "jsonwebtoken": "^9.0.0",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.5.2",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "express-validator": "^7.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

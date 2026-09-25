@@ -4,7 +4,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
-  
+
   if (!token) {
     return; // Đã được kiểm tra ở userManage.js
   }
@@ -14,8 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ------------------- FETCH API -------------------
   async function fetchData(endpoint) {
     try {
-      const res = await fetch(`http://localhost:3000/api/${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(`/api/${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       return await res.json();
     } catch (err) {
@@ -35,7 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
 
     if (categories.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='3' style='text-align:center'>Chưa có danh mục nào</td></tr>";
+      tbody.innerHTML =
+        "<tr><td colspan='3' style='text-align:center'>Chưa có danh mục nào</td></tr>";
       return;
     }
 
@@ -118,56 +119,56 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnSaveCat = document.getElementById("btnSaveCategory"); // Lấy nút theo ID mới
 
   if (btnSaveCat) {
-      btnSaveCat.addEventListener("click", async (e) => {
-          e.preventDefault(); // Chặn hành vi mặc định
+    btnSaveCat.addEventListener("click", async (e) => {
+      e.preventDefault(); // Chặn hành vi mặc định
 
-          const tenDanhMuc = document.getElementById("categoryName").value.trim();
+      const tenDanhMuc = document.getElementById("categoryName").value.trim();
 
-          if (!tenDanhMuc) {
-              alert("Vui lòng nhập tên danh mục!");
-              return;
-          }
+      if (!tenDanhMuc) {
+        alert("Vui lòng nhập tên danh mục!");
+        return;
+      }
 
-          const url = editingCategoryId
-              ? `http://localhost:3000/api/categories/${editingCategoryId}`
-              : "http://localhost:3000/api/categories";
+      const url = editingCategoryId
+        ? `/api/categories/${editingCategoryId}`
+        : "/api/categories";
 
-          const method = editingCategoryId ? "PUT" : "POST";
+      const method = editingCategoryId ? "PUT" : "POST";
 
-          // Khóa nút
-          btnSaveCat.disabled = true;
-          btnSaveCat.innerText = "Đang xử lý...";
+      // Khóa nút
+      btnSaveCat.disabled = true;
+      btnSaveCat.innerText = "Đang xử lý...";
 
-          try {
-              const res = await fetch(url, {
-                  method,
-                  headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ tenDanhMuc }),
-              });
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ tenDanhMuc }),
+        });
 
-              const data = await res.json();
+        const data = await res.json();
 
-              if (!res.ok) {
-                  alert(data.message || "Có lỗi xảy ra");
-              } else {
-                  alert(data.message || "Thành công");
-                  document.getElementById("categoryModal").style.display = "none"; // Ẩn modal
-                  document.getElementById("categoryForm").reset();
-                  editingCategoryId = null;
-                  renderCategories(); // Chỉ vẽ lại bảng
-              }
-          } catch (err) {
-              console.error("Lỗi:", err);
-              alert("Lỗi khi lưu danh mục");
-          } finally {
-              // Mở lại nút
-              btnSaveCat.disabled = false;
-              btnSaveCat.innerText = "💾 Lưu";
-          }
-      });
+        if (!res.ok) {
+          alert(data.message || "Có lỗi xảy ra");
+        } else {
+          alert(data.message || "Thành công");
+          document.getElementById("categoryModal").style.display = "none"; // Ẩn modal
+          document.getElementById("categoryForm").reset();
+          editingCategoryId = null;
+          renderCategories(); // Chỉ vẽ lại bảng
+        }
+      } catch (err) {
+        console.error("Lỗi:", err);
+        alert("Lỗi khi lưu danh mục");
+      } finally {
+        // Mở lại nút
+        btnSaveCat.disabled = false;
+        btnSaveCat.innerText = "💾 Lưu";
+      }
+    });
   }
 
   // ------------------- SỬA DANH MỤC -------------------
@@ -192,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm("Bạn có chắc muốn xóa danh mục này?")) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/categories/${id}`, {
+      const res = await fetch(`/api/categories/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

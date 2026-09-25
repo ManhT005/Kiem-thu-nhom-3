@@ -3,9 +3,17 @@
   "private": true,
   "scripts": {
     "start": "npm --prefix backend start",
-    "dev": "npm --prefix backend run dev"
+    "dev": "npm --prefix backend run dev",
+    "db:reset": "npm --prefix backend run db:reset",
+    "db:seed": "npm --prefix backend run db:seed",
+    "test:api": "newman run tests/postman/ClothesShop.postman_collection.json -e tests/postman/local.postman_environment.json --reporters cli",
+    "test:api:report": "newman run tests/postman/ClothesShop.postman_collection.json -e tests/postman/local.postman_environment.json --reporters cli,htmlextra"
   },
   "dependencies": {
     "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1"
   }
 }

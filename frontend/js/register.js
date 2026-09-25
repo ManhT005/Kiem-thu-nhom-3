@@ -44,7 +44,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const ten = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const matKhau = document.getElementById("password").value.trim();
-      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+      const confirmPassword = document
+        .getElementById("confirmPassword")
+        .value.trim();
 
       if (!ten || !email || !matKhau || !confirmPassword) {
         messageEl.textContent = "Vui lòng nhập đầy đủ thông tin";
@@ -64,15 +66,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        const res = await fetch("http://localhost:3000/api/auth/register", {
+        const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             ten,
             email,
-            matKhau
+            matKhau,
           }),
         });
 

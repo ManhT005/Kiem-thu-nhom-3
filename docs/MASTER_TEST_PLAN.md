@@ -9,7 +9,7 @@
 ## 1. GIỚI THIỆU & MỤC TIÊU DỰ ÁN (INTRODUCTION & OBJECTIVES)
 
 ### 1.1. Giới thiệu
-Tài liệu này xác định mục tiêu, phạm vi, chiến lược, môi trường, quy trình thực thi và tiêu chí nghiệm thu cho việc kiểm thử toàn diện hệ thống RESTful API của dự án Website Bán Quần Áo. Dự án bao gồm các phân hệ người dùng (Khách hàng) và phân hệ quản trị vận hành (Admin / Staff).
+Tài liệu này xác định mục tiêu, phạm vi, chiến lược, môi trường, quy trình thực thi và tiêu chí nghiệm thu cho việc kiểm thử toàn diện hệ thống RESTful API của dự án Website Bán Quần Áo. Dự án bao gồm các phân hệ người dùng (Khách hàng) và phân hệ quản trị vận hành (Admin / Staff) 
 
 ### 1.2. Mục tiêu kiểm thử (Testing Objectives)
 * **Chức năng (Functional):** Xác nhận 100% các API cốt lõi hoạt động chính xác theo đặc tả kỹ thuật và nghiệp vụ kinh doanh.

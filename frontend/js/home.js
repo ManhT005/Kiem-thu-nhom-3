@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------- LOAD PRODUCTS ----------------
   async function loadProducts() {
     try {
-      const res = await fetch("http://localhost:3000/api/products");
+      const res = await fetch("/api/products");
       if (!res.ok) return;
       const data = await res.json();
       allProducts = data.products;

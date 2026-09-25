@@ -1,0 +1,121 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ten VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    sdt VARCHAR(20) NOT NULL DEFAULT '',
+    matKhau VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin', 'staff') DEFAULT 'user'
+);
+
+CREATE TABLE IF NOT EXISTS danhMuc (
+    maDanhMuc INT AUTO_INCREMENT PRIMARY KEY,
+    tenDanhMuc VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS `Size` (
+    maSize INT AUTO_INCREMENT PRIMARY KEY,
+    tenSize VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS SanPham (
+    maSP INT AUTO_INCREMENT PRIMARY KEY,
+    tenSP VARCHAR(150) NOT NULL,
+    gia INT NOT NULL,
+    moTa TEXT,
+    anhSP VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS ChiTietSanPham (
+    maSP INT,
+    maSize INT,
+    soLuongTon INT DEFAULT 0,
+    PRIMARY KEY (maSP, maSize),
+    FOREIGN KEY (maSP) REFERENCES SanPham(maSP) ON DELETE CASCADE,
+    FOREIGN KEY (maSize) REFERENCES `Size`(maSize) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS SanPham_DanhMuc (
+    maSP INT,
+    maDanhMuc INT,
+    PRIMARY KEY (maSP, maDanhMuc),
+    FOREIGN KEY (maSP) REFERENCES SanPham(maSP) ON DELETE CASCADE,
+    FOREIGN KEY (maDanhMuc) REFERENCES danhMuc(maDanhMuc) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS HinhAnh (
+    maAnh INT AUTO_INCREMENT PRIMARY KEY,
+    link VARCHAR(255) NOT NULL,
+    maSP INT,
+    FOREIGN KEY (maSP) REFERENCES SanPham(maSP) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS GioHang (
+    maGioHang INT AUTO_INCREMENT PRIMARY KEY,
+    userId INT,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ChiTietGioHang (
+    maGioHang INT,
+    maSP INT,
+    maSize INT,
+    soLuongMua INT DEFAULT 1,
+    PRIMARY KEY (maGioHang, maSP, maSize),
+    FOREIGN KEY (maGioHang) REFERENCES GioHang(maGioHang) ON DELETE CASCADE,
+    FOREIGN KEY (maSP) REFERENCES SanPham(maSP) ON DELETE CASCADE,
+    FOREIGN KEY (maSize) REFERENCES `Size`(maSize) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS phuongThucThanhToan (
+    maPTTT INT AUTO_INCREMENT PRIMARY KEY,
+    tenPTTT VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS GiamGia (
+    maGiamGia INT AUTO_INCREMENT PRIMARY KEY,
+    chietKhau INT NOT NULL,
+    ngayBatDau DATE NOT NULL,
+    ngayKetThuc DATE NOT NULL,
+    moTa TEXT
+);
+
+CREATE TABLE IF NOT EXISTS DiaChi (
+    maDiaChi INT AUTO_INCREMENT PRIMARY KEY,
+    tenDiaChi VARCHAR(255) NOT NULL,
+    id INT,
+    macDinh TINYINT(1) DEFAULT 0,
+    FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS DonHang (
+    maDonHang INT AUTO_INCREMENT PRIMARY KEY,
+    ngayDat DATETIME DEFAULT CURRENT_TIMESTAMP,
+    trangThai VARCHAR(50) DEFAULT 'Pending',
+    ghiChu TEXT,
+    tenNguoiNhan VARCHAR(100),
+    sdt VARCHAR(20),
+    email VARCHAR(100),
+    diaChiGiaoHang VARCHAR(255),
+    phiGiaoHang INT DEFAULT 0,
+    tongTien INT DEFAULT 0,
+    maPTTT INT,
+    id INT,
+    maDiaChi INT,
+    maGiamGia INT,
+    FOREIGN KEY (maPTTT) REFERENCES phuongThucThanhToan(maPTTT),
+    FOREIGN KEY (id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (maDiaChi) REFERENCES DiaChi(maDiaChi),
+    FOREIGN KEY (maGiamGia) REFERENCES GiamGia(maGiamGia)
+);
+
+CREATE TABLE IF NOT EXISTS ChiTietDonHang (
+    maDonHang INT,
+    maSP INT,
+    maSize INT,
+    soLuongMua INT DEFAULT 1,
+    giaMua INT,
+    PRIMARY KEY (maDonHang, maSP, maSize),
+    FOREIGN KEY (maDonHang) REFERENCES DonHang(maDonHang) ON DELETE CASCADE,
+    FOREIGN KEY (maSP) REFERENCES SanPham(maSP),
+    FOREIGN KEY (maSize) REFERENCES `Size`(maSize)
+);

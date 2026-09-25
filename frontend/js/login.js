@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
   const messageEl = document.getElementById("message");
   const registerBtn = document.getElementById("registerBtn");
-  
+
   // --- CODE XỬ LÝ CON MẮT MỚI ---
   const togglePassword = document.getElementById("togglePassword");
   const passwordInput = document.getElementById("password");
@@ -20,10 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Nếu vừa chuyển sang ẨN mật khẩu (password) -> đổi icon về mắt gạch chéo (fa-eye-slash)
       if (isPassword) {
         togglePassword.classList.remove("fa-eye-slash"); // Xóa icon gạch chéo
-        togglePassword.classList.add("fa-eye");          // Thêm icon mắt mở
+        togglePassword.classList.add("fa-eye"); // Thêm icon mắt mở
       } else {
-        togglePassword.classList.remove("fa-eye");       // Xóa icon mắt mở
-        togglePassword.classList.add("fa-eye-slash");    // Thêm icon gạch chéo
+        togglePassword.classList.remove("fa-eye"); // Xóa icon mắt mở
+        togglePassword.classList.add("fa-eye-slash"); // Thêm icon gạch chéo
       }
     });
   }
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
