@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import authRoutes from "./routes/auth.routes.js";
@@ -7,27 +8,30 @@ import khoRoutes from "./routes/kho.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
-import cors from "cors"; // thu vien cors de chay live server
+import cors from "cors";
 import axios from "axios"; //phần momo
 import crypto from "crypto"; // phần momo
+import { CORS_ORIGIN } from "./config/config.js";
+import { success } from "./utils/api-response.js";
+import { notFound } from "./middleware/not-found.middleware.js";
+import { errorHandler } from "./middleware/error.middleware.js";
+import { responseContract } from "./middleware/response-contract.middleware.js";
 const app = express();
 
-// const cors = require('cors');
-app.use(cors());
-
-// app.use(cors({
-//   origin: [
-//     "http://localhost:5500",
-//     "http://127.0.0.1:5500",
-//   ],
-//   methods: ["GET", "POST", "PUT", "DELETE"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-// }));
+app.use(
+  cors({
+    origin: CORS_ORIGIN.split(",").map((origin) => origin.trim()),
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
+app.use(responseContract);
 
 const __dirname = path.resolve();
 
 // ------------------ API ROUTES -----------------
+app.get("/api/health", (_req, res) => success(res, { data: { status: "UP" } }));
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
@@ -69,7 +73,7 @@ const config = {
 };
 
 // API TẠO LINK THANH TOÁN MOMO
-app.post("/api/create-payment-momo", async (req, res) => {
+app.post("/api/create-payment-momo", async (req, res, next) => {
   const { amount } = req.body; // Lấy tổng tiền từ Frontend gửi lên
 
   // Tạo mã đơn hàng ngẫu nhiên để không bị trùng
@@ -113,17 +117,23 @@ app.post("/api/create-payment-momo", async (req, res) => {
     res.status(200).json(response.data);
   } catch (error) {
     console.error("Lỗi thanh toán MoMo:", error);
-    res.status(500).json({ message: "Lỗi tạo giao dịch MoMo" });
+    next(error);
   }
 });
 
+app.use("/api", notFound);
+app.use(errorHandler);
+
+export default app;
+
 // ------------------ START SERVER ------------------
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`🌐 Frontend: http://localhost:${PORT}`);
-  console.log(`🔐 Login:    http://localhost:${PORT}/login`);
-  console.log(`🧪 API:      http://localhost:${PORT}/api/products`);
-});
+if (process.env.NODE_ENV !== "test") {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Frontend: http://localhost:${PORT}`);
+    console.log(`API:      http://localhost:${PORT}/api/products`);
+  });
+}
 
 // tắt bằng terminal:  taskkill /F /IM node.exe

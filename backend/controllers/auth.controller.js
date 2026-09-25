@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/users.js";
+import { SECRET_KEY, JWT_EXPIRES_IN } from "../config/config.js";
 
 // ====================== REGISTER ===========================
 export const register = (req, res) => {
@@ -51,8 +52,8 @@ export const login = (req, res) => {
     if (!valid) return res.status(400).json({ message: "Sai mật khẩu" });
 
     // TẠO TOKEN
-    const token = jwt.sign({ id: user.id, role: user.role }, "SECRET_KEY_123", {
-      expiresIn: "7d",
+    const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, {
+      expiresIn: JWT_EXPIRES_IN,
     });
 
     res.json({
