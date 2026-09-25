@@ -74,18 +74,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const token = localStorage.getItem("token");
 
     if (user && token) {
-      if(loginBtn) loginBtn.style.display = "none";
-      if(registerBtn) registerBtn.style.display = "none";
-      if(userMenu) userMenu.style.display = "flex";
-      if(userName) userName.innerText = user.ten || user.username || "User";
-      if(cartBtn) cartBtn.style.display = "flex";
+      if (loginBtn) loginBtn.style.display = "none";
+      if (registerBtn) registerBtn.style.display = "none";
+      if (userMenu) userMenu.style.display = "flex";
+      if (userName) userName.innerText = user.ten || user.username || "User";
+      if (cartBtn) cartBtn.style.display = "flex";
       await updateCartCount();
     } else {
-      if(loginBtn) loginBtn.style.display = "inline-block";
-      if(registerBtn) registerBtn.style.display = "inline-block";
-      if(userMenu) userMenu.style.display = "none";
-      if(cartBtn) cartBtn.style.display = "none";
-      if(cartCount) cartCount.innerText = 0;
+      if (loginBtn) loginBtn.style.display = "inline-block";
+      if (registerBtn) registerBtn.style.display = "inline-block";
+      if (userMenu) userMenu.style.display = "none";
+      if (cartBtn) cartBtn.style.display = "none";
+      if (cartCount) cartCount.innerText = 0;
     }
   }
 
@@ -138,25 +138,25 @@ document.addEventListener("DOMContentLoaded", () => {
       let total = 0;
       const token = localStorage.getItem("token");
       if (token) {
-        const res = await fetch("http://localhost:3000/api/cart", {
+        const res = await fetch("/api/cart", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
           if (data.cart) {
-             total = data.cart.reduce((sum, item) => sum + item.soLuongMua, 0);
+            total = data.cart.reduce((sum, item) => sum + item.soLuongMua, 0);
           } else if (Array.isArray(data)) {
-             total = data.reduce((sum, item) => sum + item.soLuongMua, 0);
+            total = data.reduce((sum, item) => sum + item.soLuongMua, 0);
           }
         }
       } else {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         total = cart.reduce((sum, item) => sum + item.quantity, 0);
       }
-      if(cartCount) cartCount.innerText = total;
+      if (cartCount) cartCount.innerText = total;
     } catch (err) {
       console.error(err);
-      if(cartCount) cartCount.innerText = 0;
+      if (cartCount) cartCount.innerText = 0;
     }
   }
 

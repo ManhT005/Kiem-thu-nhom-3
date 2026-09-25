@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const kw = searchInput.value.trim();
     if (!kw) return;
     window.location.href = `/pages/search.html?keyword=${encodeURIComponent(
-      kw
+      kw,
     )}`;
   }
 
@@ -40,12 +40,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ================= LOAD PRODUCTS =================
   try {
-    const res = await fetch("http://localhost:3000/api/products");
+    const res = await fetch("/api/products");
     const data = await res.json();
     if (!res.ok) throw new Error("Không thể tải sản phẩm");
 
     const results = data.products.filter((p) =>
-      p.tenSP.toLowerCase().includes(keyword.toLowerCase())
+      p.tenSP.toLowerCase().includes(keyword.toLowerCase()),
     );
 
     searchResults.innerHTML = "";
