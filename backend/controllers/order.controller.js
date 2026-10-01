@@ -1,12 +1,14 @@
-import db from "../config/db.js";
 import {
     cancelOrder as cancelOrderService,
     createOrder as createOrderService,
+    getAllOrders as getAllOrdersService,
+    getFilteredOrders as getFilteredOrdersService,
+    getMyOrders as getMyOrdersService,
+    getOrderHistory as getOrderHistoryService,
     updateOrderStatus as updateOrderStatusService,
 } from "../services/order.service.js";
 import { success } from "../utils/api-response.js";
 
-// ====================== TẠO ĐƠN HÀNG ===========================
 export const createOrder = async (req, res, next) => {
     try {
         const order = await createOrderService({ ...req.body, userId: req.user.id });
@@ -21,107 +23,62 @@ export const createOrder = async (req, res, next) => {
     }
 };
 
-// ====================== LẤY ĐƠN HÀNG CỦA TÔI  ===========================
-export const getMyOrders = (req, res) => {
-    const userId = req.user.id; 
-
-    const query = `
-        SELECT 
-            d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.tenNguoiNhan, d.sdt, d.diaChiGiaoHang, d.ghiChu,
-            c.maSP, c.soLuongMua, c.giaMua,
-            s.tenSP, s.anhSP,
-            sz.tenSize
-        FROM DonHang d
-        LEFT JOIN ChiTietDonHang c ON d.maDonHang = c.maDonHang
-        LEFT JOIN SanPham s ON c.maSP = s.maSP
-        LEFT JOIN \`Size\` sz ON c.maSize = sz.maSize
-        WHERE d.id = ? 
-        ORDER BY d.ngayDat DESC
-    `;
-
-    db.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error("❌ Lỗi SQL getMyOrders:", err); 
-            return res.status(500).json({ message: "Lỗi Server khi lấy đơn hàng", error: err.message });
-        }
-
-        const ordersMap = {};
-
-        results.forEach(row => {
-            if (!ordersMap[row.maDonHang]) {
-                ordersMap[row.maDonHang] = {
-                    maDonHang: row.maDonHang,
-                    ngayDat: row.ngayDat,
-                    trangThai: row.trangThai,
-                    tongTien: row.tongTien,
-                    tenNguoiNhan: row.tenNguoiNhan,
-                    sdt: row.sdt,
-                    diaChiGiaoHang: row.diaChiGiaoHang,
-                    items: []
-                };
-            }
-            if (row.maSP) {
-                ordersMap[row.maDonHang].items.push({
-                    tenSP: row.tenSP,
-                    anhSP: row.anhSP,
-                    tenSize: row.tenSize,
-                    soLuongMua: row.soLuongMua,
-                    giaMua: row.giaMua
-                });
-            }
+export const getMyOrders = async (req, res, next) => {
+    try {
+        const orders = await getMyOrdersService(req.user.id);
+        return success(res, {
+            code: "MY_ORDERS_FETCHED",
+            message: "Orders fetched successfully",
+            data: orders,
         });
-
-        res.status(200).json(Object.values(ordersMap));
-    });
-};
-export const getAllOrders = (req, res) => {
-    // Truy vấn lấy đơn hàng kèm thông tin sản phẩm
-    const query = `
-        SELECT 
-            d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.tenNguoiNhan, d.sdt, d.diaChiGiaoHang,
-            c.maSP, c.soLuongMua, c.maSize,
-            s.tenSP, s.anhSP,
-            sz.tenSize
-        FROM DonHang d
-        LEFT JOIN ChiTietDonHang c ON d.maDonHang = c.maDonHang
-        LEFT JOIN SanPham s ON c.maSP = s.maSP
-        LEFT JOIN \`Size\` sz ON c.maSize = sz.maSize
-        ORDER BY d.ngayDat DESC
-    `;
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).json({ message: "Lỗi lấy đơn hàng: " + err.message });
-
-        // Gom nhóm sản phẩm theo đơn hàng
-        const ordersMap = {};
-        results.forEach(row => {
-            if (!ordersMap[row.maDonHang]) {
-                ordersMap[row.maDonHang] = {
-                    maDonHang: row.maDonHang,
-                    ngayDat: row.ngayDat,
-                    trangThai: row.trangThai,
-                    tongTien: row.tongTien,
-                    tenNguoiNhan: row.tenNguoiNhan,
-                    sdt: row.sdt,
-                    diaChiGiaoHang: row.diaChiGiaoHang,
-                    items: []
-                };
-            }
-            if (row.maSP) {
-                ordersMap[row.maDonHang].items.push({
-                    tenSP: row.tenSP,
-                    anhSP: row.anhSP,
-                    tenSize: row.tenSize,
-                    soLuongMua: row.soLuongMua
-                });
-            }
-        });
-
-        res.status(200).json(Object.values(ordersMap));
-    });
+    } catch (error) {
+        return next(error);
+    }
 };
 
-// ====================== STAFF/ADMIN: CẬP NHẬT TRẠNG THÁI ===========================
+export const getAllOrders = async (_req, res, next) => {
+    try {
+        const orders = await getAllOrdersService();
+        return success(res, {
+            code: "ORDER_LIST_SUCCESS",
+            message: "Orders fetched successfully",
+            data: orders,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const getFilteredOrders = async (req, res, next) => {
+    try {
+        const result = await getFilteredOrdersService(req.query);
+        return success(res, {
+            code: "ORDER_LIST_SUCCESS",
+            message: "Orders fetched successfully",
+            data: result,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const getOrderHistory = async (req, res, next) => {
+    try {
+        const history = await getOrderHistoryService({
+            orderId: req.params.id,
+            actorId: req.user.id,
+            role: req.user.role,
+        });
+        return success(res, {
+            code: "ORDER_HISTORY_FETCHED",
+            message: "Order history fetched successfully",
+            data: history,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 export const updateOrderStatus = async (req, res, next) => {
     try {
         const order = await updateOrderStatusService({

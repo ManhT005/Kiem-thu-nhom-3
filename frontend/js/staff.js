@@ -188,7 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/orders/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const orders = await res.json();
+      const responseData = await res.json();
+      const orders = responseData.data ?? responseData;
 
       tbody.innerHTML = "";
       if (!orders || orders.length === 0) {

@@ -1,4 +1,5 @@
 import { AppError } from "../utils/app-error.js";
+import db from "../config/db.js";
 import { withTransaction } from "../utils/transaction.js";
 import { orderRepository } from "../repositories/order.repository.js";
 import {
@@ -222,3 +223,131 @@ export const cancelOrder = (input, dependencies) =>
 
 export const updateOrderStatus = (input, dependencies) =>
   transitionOrder(input, dependencies);
+
+const mapOrderRows = (rows) => {
+  const orders = new Map();
+  for (const row of rows) {
+    if (!orders.has(row.maDonHang)) {
+      orders.set(row.maDonHang, {
+        maDonHang: row.maDonHang,
+        ngayDat: row.ngayDat,
+        trangThai: row.trangThai,
+        tongTien: row.tongTien,
+        tenNguoiNhan: row.tenNguoiNhan,
+        sdt: row.sdt,
+        diaChiGiaoHang: row.diaChiGiaoHang,
+        ghiChu: row.ghiChu,
+        items: [],
+      });
+    }
+
+    if (row.maSP !== null && row.maSP !== undefined) {
+      orders.get(row.maDonHang).items.push({
+        maSP: row.maSP,
+        tenSP: row.tenSP,
+        anhSP: row.anhSP,
+        maSize: row.maSize,
+        tenSize: row.tenSize,
+        soLuongMua: row.soLuongMua,
+        ...(row.giaMua === undefined ? {} : { giaMua: row.giaMua }),
+      });
+    }
+  }
+  return [...orders.values()];
+};
+
+export const getMyOrders = async (
+  userId,
+  { executor = db.promise(), repository = orderRepository } = {},
+) => mapOrderRows(await repository.getMyOrderRows(executor, userId));
+
+export const getAllOrders = async (
+  { executor = db.promise(), repository = orderRepository } = {},
+) => mapOrderRows(await repository.getAllOrderRows(executor));
+
+export const getOrderHistory = async (
+  { orderId, actorId, role },
+  { executor = db.promise(), repository = orderRepository } = {},
+) => {
+  const normalizedOrderId = Number(orderId);
+  if (!Number.isSafeInteger(normalizedOrderId) || normalizedOrderId < 1) {
+    throw new AppError(400, "VALIDATION_ERROR", "Order id must be a positive integer");
+  }
+
+  const order = await repository.getOrderOwner(executor, normalizedOrderId);
+  if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order not found");
+  if (
+    !["admin", "staff"].includes(role) &&
+    Number(order.id) !== Number(actorId)
+  ) {
+    throw new AppError(403, "ORDER_ACCESS_DENIED", "Order does not belong to this user");
+  }
+
+  return repository.getOrderHistory(executor, normalizedOrderId);
+};
+
+const validateOrderFilters = (filters) => {
+  if (filters.trangThai && !isOrderStatus(filters.trangThai)) {
+    throw new AppError(400, "INVALID_ORDER_STATUS", "Unknown order status");
+  }
+
+  const page = filters.page === undefined ? 1 : Number(filters.page);
+  const limit = filters.limit === undefined ? 20 : Number(filters.limit);
+  const minTotal = filters.minTotal === undefined ? undefined : Number(filters.minTotal);
+  const maxTotal = filters.maxTotal === undefined ? undefined : Number(filters.maxTotal);
+
+  if (!Number.isSafeInteger(page) || page < 1) {
+    throw new AppError(400, "VALIDATION_ERROR", "page must be a positive integer");
+  }
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new AppError(400, "VALIDATION_ERROR", "limit must be between 1 and 100");
+  }
+  const offset = (page - 1) * limit;
+  if (!Number.isSafeInteger(offset)) {
+    throw new AppError(400, "VALIDATION_ERROR", "page is too large");
+  }
+  if (minTotal !== undefined && (!Number.isFinite(minTotal) || minTotal < 0)) {
+    throw new AppError(400, "VALIDATION_ERROR", "minTotal must be non-negative");
+  }
+  if (maxTotal !== undefined && (!Number.isFinite(maxTotal) || maxTotal < 0)) {
+    throw new AppError(400, "VALIDATION_ERROR", "maxTotal must be non-negative");
+  }
+  if (minTotal !== undefined && maxTotal !== undefined && minTotal > maxTotal) {
+    throw new AppError(400, "VALIDATION_ERROR", "maxTotal must be at least minTotal");
+  }
+  if (
+    filters.fromDate &&
+    filters.toDate &&
+    Date.parse(filters.fromDate) > Date.parse(filters.toDate)
+  ) {
+    throw new AppError(400, "VALIDATION_ERROR", "fromDate must not be after toDate");
+  }
+
+  return {
+    normalized: { ...filters, minTotal, maxTotal },
+    page,
+    limit,
+    offset,
+  };
+};
+
+export const getFilteredOrders = async (
+  filters,
+  { executor = db.promise(), repository = orderRepository } = {},
+) => {
+  const { normalized, page, limit, offset } = validateOrderFilters(filters);
+  const { rows, total } = await repository.getFilteredOrderPage(
+    executor,
+    normalized,
+    { limit, offset },
+  );
+  return {
+    items: mapOrderRows(rows),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    },
+  };
+};

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   cancelOrder,
   createOrder,
+  getFilteredOrders,
+  getOrderHistory,
   updateOrderStatus,
 } from "../services/order.service.js";
 import { ORDER_STATUS } from "../domain/order-status.js";
@@ -187,4 +189,79 @@ test("rejects invalid transitions before restoring stock", async () => {
   );
   assert.equal(state.status, ORDER_STATUS.PENDING);
   assert.equal(state.stock, 8);
+});
+
+test("filters orders with bound parameters and returns page metadata", async () => {
+  const calls = [];
+  const executor = {
+    async execute(sql, values = []) {
+      calls.push({ sql, values });
+      if (sql.includes("COUNT(*)")) return [[{ total: 3 }]];
+      if (sql.includes("LIMIT ? OFFSET ?")) return [[{ maDonHang: 42 }]];
+      return [[
+        {
+          maDonHang: 42,
+          trangThai: ORDER_STATUS.PENDING,
+          tongTien: 50,
+          maSP: 2,
+          maSize: 4,
+          soLuongMua: 1,
+          giaMua: 50,
+          tenSP: "Shirt",
+          tenSize: "M",
+        },
+      ]];
+    },
+  };
+
+  const result = await getFilteredOrders(
+    {
+      trangThai: ORDER_STATUS.PENDING,
+      fromDate: "2026-01-01",
+      toDate: "2026-01-31",
+      minTotal: "10",
+      maxTotal: "100",
+      keyword: "Ada%_",
+      page: "2",
+      limit: "1",
+    },
+    { executor },
+  );
+
+  assert.equal(result.pagination.page, 2);
+  assert.equal(result.pagination.limit, 1);
+  assert.equal(result.pagination.total, 3);
+  assert.equal(result.pagination.totalPages, 3);
+  assert.equal(result.items[0].items[0].maSize, 4);
+  assert.equal(calls[0].sql.includes("Ada"), false);
+  assert.equal(calls[0].values.includes("%Ada\\%\\_%"), true);
+  assert.deepEqual(calls[1].values.slice(-2), [1, 1]);
+});
+
+test("allows order history only for its owner or staff", async () => {
+  let historyRead = false;
+  const repository = {
+    async getOrderOwner() {
+      return { maDonHang: 42, id: 99 };
+    },
+    async getOrderHistory() {
+      historyRead = true;
+      return [];
+    },
+  };
+
+  await assert.rejects(
+    getOrderHistory(
+      { orderId: 42, actorId: 3, role: "user" },
+      { executor: {}, repository },
+    ),
+    { code: "ORDER_ACCESS_DENIED" },
+  );
+  assert.equal(historyRead, false);
+
+  await getOrderHistory(
+    { orderId: 42, actorId: 8, role: "staff" },
+    { executor: {}, repository },
+  );
+  assert.equal(historyRead, true);
 });

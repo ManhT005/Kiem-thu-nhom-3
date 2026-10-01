@@ -1,4 +1,4 @@
-import { body, param } from "express-validator";
+import { body, param, query } from "express-validator";
 import { ORDER_STATUS_VALUES } from "../domain/order-status.js";
 
 export const createOrderValidation = [
@@ -46,4 +46,48 @@ export const orderStatusValidation = [
     .optional({ nullable: true })
     .isLength({ max: 500 })
     .withMessage("lyDo must be at most 500 characters"),
+];
+
+export const orderFilterValidation = [
+  query("trangThai")
+    .optional()
+    .isIn(ORDER_STATUS_VALUES)
+    .withMessage("trangThai must be a known order status"),
+  query("fromDate")
+    .optional()
+    .isISO8601({ strict: true })
+    .withMessage("fromDate must be an ISO date"),
+  query("toDate")
+    .optional()
+    .isISO8601({ strict: true })
+    .withMessage("toDate must be an ISO date"),
+  query("toDate").custom((toDate, { req }) => {
+    if (!toDate || !req.query.fromDate) return true;
+    return Date.parse(req.query.fromDate) <= Date.parse(toDate);
+  }).withMessage("toDate must not be before fromDate"),
+  query("minTotal")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("minTotal must be non-negative"),
+  query("maxTotal")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("maxTotal must be non-negative"),
+  query("maxTotal").custom((maxTotal, { req }) => {
+    if (maxTotal === undefined || req.query.minTotal === undefined) return true;
+    return Number(maxTotal) >= Number(req.query.minTotal);
+  }).withMessage("maxTotal must be at least minTotal"),
+  query("keyword")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("keyword must be at most 100 characters"),
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("page must be a positive integer"),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("limit must be between 1 and 100"),
 ];

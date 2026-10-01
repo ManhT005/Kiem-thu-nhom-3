@@ -207,7 +207,8 @@ async function fetchOrders(token) {
       throw new Error(errData.message || response.statusText);
     }
 
-    const orders = await response.json();
+    const responseData = await response.json();
+    const orders = responseData.data ?? responseData;
 
     if (orders.length > 0) {
       orderListDiv.innerHTML = orders

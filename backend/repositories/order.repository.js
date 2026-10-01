@@ -1,3 +1,52 @@
+const ORDER_ROWS_SELECT = `
+  SELECT
+    d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.tenNguoiNhan,
+    d.sdt, d.diaChiGiaoHang, d.ghiChu,
+    c.maSP, c.maSize, c.soLuongMua, c.giaMua,
+    s.tenSP, s.anhSP, sz.tenSize
+  FROM DonHang d
+  LEFT JOIN ChiTietDonHang c ON d.maDonHang = c.maDonHang
+  LEFT JOIN SanPham s ON c.maSP = s.maSP
+  LEFT JOIN \`Size\` sz ON c.maSize = sz.maSize`;
+
+const buildOrderFilters = (filters) => {
+  const conditions = [];
+  const values = [];
+
+  if (filters.trangThai) {
+    conditions.push("d.trangThai = ?");
+    values.push(filters.trangThai);
+  }
+  if (filters.fromDate) {
+    conditions.push("d.ngayDat >= ?");
+    values.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    conditions.push("d.ngayDat < DATE_ADD(?, INTERVAL 1 DAY)");
+    values.push(filters.toDate);
+  }
+  if (filters.minTotal !== undefined) {
+    conditions.push("d.tongTien >= ?");
+    values.push(filters.minTotal);
+  }
+  if (filters.maxTotal !== undefined) {
+    conditions.push("d.tongTien <= ?");
+    values.push(filters.maxTotal);
+  }
+  if (filters.keyword) {
+    const keyword = `%${String(filters.keyword).replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push(
+      "(CAST(d.maDonHang AS CHAR) LIKE ? OR d.tenNguoiNhan LIKE ? OR d.sdt LIKE ?)",
+    );
+    values.push(keyword, keyword, keyword);
+  }
+
+  return {
+    clause: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+    values,
+  };
+};
+
 export const orderRepository = {
   async findPaymentMethod(connection, paymentMethodId) {
     const [rows] = await connection.execute(
@@ -123,5 +172,74 @@ export const orderRepository = {
       [status, orderId],
     );
     return result.affectedRows;
+  },
+
+  async getMyOrderRows(executor, userId) {
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       WHERE d.id = ?
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC`,
+      [userId],
+    );
+    return rows;
+  },
+
+  async getAllOrderRows(executor) {
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC`,
+    );
+    return rows;
+  },
+
+  async getOrderOwner(executor, orderId) {
+    const [rows] = await executor.execute(
+      "SELECT maDonHang, id FROM DonHang WHERE maDonHang = ?",
+      [orderId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async getOrderHistory(executor, orderId) {
+    const [rows] = await executor.execute(
+      `SELECT h.maLichSu, h.maDonHang, h.trangThaiCu, h.trangThaiMoi,
+              h.nguoiThayDoi, u.ten AS tenNguoiThayDoi, h.lyDo, h.thoiGian
+       FROM LichSuDonHang h
+       LEFT JOIN users u ON u.id = h.nguoiThayDoi
+       WHERE h.maDonHang = ?
+       ORDER BY h.thoiGian ASC, h.maLichSu ASC`,
+      [orderId],
+    );
+    return rows;
+  },
+
+  async getFilteredOrderPage(executor, filters, { limit, offset }) {
+    const { clause, values } = buildOrderFilters(filters);
+    const [countRows] = await executor.execute(
+      `SELECT COUNT(*) AS total FROM DonHang d ${clause}`,
+      values,
+    );
+    const total = Number(countRows[0]?.total || 0);
+    if (total === 0) return { rows: [], total };
+
+    const [orderRows] = await executor.execute(
+      `SELECT d.maDonHang
+       FROM DonHang d
+       ${clause}
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC
+       LIMIT ? OFFSET ?`,
+      [...values, limit, offset],
+    );
+    const orderIds = orderRows.map((row) => row.maDonHang);
+    if (orderIds.length === 0) return { rows: [], total };
+
+    const placeholders = orderIds.map(() => "?").join(", ");
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       WHERE d.maDonHang IN (${placeholders})
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC, c.maSP, c.maSize`,
+      orderIds,
+    );
+    return { rows, total };
   },
 };
