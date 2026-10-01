@@ -8,6 +8,7 @@ import {
   updateOrderStatus,
 } from "../services/order.service.js";
 import { ORDER_STATUS } from "../domain/order-status.js";
+import { withTransaction } from "../utils/transaction.js";
 
 const makeRepository = ({ stock = 10 } = {}) => {
   const calls = [];
@@ -150,6 +151,56 @@ test("checks every locked stock row before creating an order", async () => {
   );
   assert.equal(calls.some(([name]) => name === "insertOrder"), false);
   assert.equal(calls.some(([name]) => name === "reduceStock"), false);
+});
+
+test("rolls back order writes when stock reservation fails", async () => {
+  const events = [];
+  const { calls, repository } = makeRepository();
+  repository.reduceStock = async () => {
+    calls.push(["reduceStock"]);
+    return 0;
+  };
+  const pool = {
+    promise: () => ({
+      async getConnection() {
+        return {
+          async beginTransaction() {
+            events.push("begin");
+          },
+          async commit() {
+            events.push("commit");
+          },
+          async rollback() {
+            events.push("rollback");
+          },
+          release() {
+            events.push("release");
+          },
+        };
+      },
+    }),
+  };
+
+  await assert.rejects(
+    createOrder(
+      {
+        userId: 3,
+        tenNguoiNhan: "Buyer",
+        sdt: "0912345678",
+        diaChiGiaoHang: "Hanoi",
+        maPTTT: 1,
+        items: [{ maSP: 2, maSize: 1, soLuongMua: 1 }],
+      },
+      {
+        transaction: (work) => withTransaction(work, pool),
+        repository,
+      },
+    ),
+    { code: "STOCK_UPDATE_FAILED" },
+  );
+
+  assert.equal(calls.some(([name]) => name === "insertOrder"), true);
+  assert.deepEqual(events, ["begin", "rollback", "release"]);
 });
 
 test("cancels an owned pending order once and restores stock once", async () => {

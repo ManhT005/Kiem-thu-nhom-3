@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 
-export const withTransaction = async (work) => {
-  const connection = await db.promise().getConnection();
+export const withTransaction = async (work, pool = db) => {
+  const connection = await pool.promise().getConnection();
 
   try {
     await connection.beginTransaction();

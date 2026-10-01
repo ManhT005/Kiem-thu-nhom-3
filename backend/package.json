@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "db:reset": "node scripts/db-reset.js",
     "db:seed": "node scripts/db-seed.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:order-concurrency": "node --test tests/integration/order-concurrency.test.js"
   },
   "keywords": [
     "web",

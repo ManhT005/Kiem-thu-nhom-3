@@ -102,6 +102,64 @@
           }
         }
       ]
+    },
+    {
+      "name": "Phase 2 Order Authentication Guards",
+      "item": [
+        {
+          "name": "Create order requires authentication",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        },
+        {
+          "name": "My orders requires authentication",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/orders/my-orders" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        },
+        {
+          "name": "User cancellation requires authentication",
+          "request": { "method": "PUT", "header": [], "url": "{{baseUrl}}/api/orders/1/cancel" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        },
+        {
+          "name": "Status update requires authentication",
+          "request": { "method": "PUT", "header": [], "url": "{{baseUrl}}/api/orders/1/status" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        },
+        {
+          "name": "Order history requires authentication",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/orders/1/history" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        },
+        {
+          "name": "Admin order filter requires authentication",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/orders/admin/filter" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+          ] } }]
+        }
+      ]
     }
   ]
 }
