@@ -1,7 +1,11 @@
 import { AppError } from "../utils/app-error.js";
 import { withTransaction } from "../utils/transaction.js";
 import { orderRepository } from "../repositories/order.repository.js";
-import { ORDER_STATUS } from "../domain/order-status.js";
+import {
+  isOrderStatus,
+  isOrderTransitionAllowed,
+  ORDER_STATUS,
+} from "../domain/order-status.js";
 
 const prepareItems = (items) => {
   if (!Array.isArray(items) || items.length === 0) {
@@ -133,3 +137,88 @@ export const createOrder = async (
     return { maDonHang: orderId, tongTien: total, trangThai: status };
   });
 };
+
+const restoreOrderStock = async (connection, orderId, repository) => {
+  const items = await repository.getOrderItems(connection, orderId);
+  for (const item of items) {
+    const affectedRows = await repository.restoreStock(connection, item);
+    if (affectedRows !== 1) {
+      throw new AppError(409, "STOCK_RESTORE_FAILED", "Unable to restore stock");
+    }
+  }
+};
+
+const transitionOrder = async (
+  { orderId, targetStatus, actorId, reason, ownOrderOnly = false },
+  { transaction = withTransaction, repository = orderRepository } = {},
+) => {
+  const normalizedOrderId = Number(orderId);
+  if (!Number.isSafeInteger(normalizedOrderId) || normalizedOrderId < 1) {
+    throw new AppError(400, "VALIDATION_ERROR", "Order id must be a positive integer");
+  }
+  if (!isOrderStatus(targetStatus)) {
+    throw new AppError(400, "INVALID_ORDER_STATUS", "Unknown order status");
+  }
+
+  return transaction(async (connection) => {
+    const order = await repository.lockOrder(connection, normalizedOrderId);
+    if (!order) {
+      throw new AppError(404, "ORDER_NOT_FOUND", "Order not found");
+    }
+    if (ownOrderOnly && Number(order.id) !== Number(actorId)) {
+      throw new AppError(403, "ORDER_ACCESS_DENIED", "Order does not belong to this user");
+    }
+    if (order.trangThai === ORDER_STATUS.CANCELLED) {
+      throw new AppError(409, "ORDER_ALREADY_CANCELLED", "Order is already cancelled");
+    }
+    if (ownOrderOnly && order.trangThai !== ORDER_STATUS.PENDING) {
+      throw new AppError(
+        409,
+        "ORDER_CANCEL_NOT_ALLOWED",
+        "Only pending orders can be cancelled by their owner",
+      );
+    }
+    if (order.trangThai === targetStatus) {
+      throw new AppError(409, "ORDER_STATUS_UNCHANGED", "Order status is unchanged");
+    }
+    if (!isOrderTransitionAllowed(order.trangThai, targetStatus)) {
+      throw new AppError(
+        409,
+        "INVALID_ORDER_TRANSITION",
+        "Order status transition is not allowed",
+      );
+    }
+
+    if (targetStatus === ORDER_STATUS.CANCELLED) {
+      await restoreOrderStock(connection, normalizedOrderId, repository);
+    }
+
+    const affectedRows = await repository.updateOrderStatus(
+      connection,
+      normalizedOrderId,
+      targetStatus,
+    );
+    if (affectedRows !== 1) {
+      throw new AppError(409, "ORDER_STATUS_UPDATE_FAILED", "Unable to update order status");
+    }
+
+    await repository.insertHistory(connection, {
+      orderId: normalizedOrderId,
+      previousStatus: order.trangThai,
+      newStatus: targetStatus,
+      actorId,
+      reason: reason || null,
+    });
+
+    return { maDonHang: normalizedOrderId, trangThai: targetStatus };
+  });
+};
+
+export const cancelOrder = (input, dependencies) =>
+  transitionOrder(
+    { ...input, targetStatus: ORDER_STATUS.CANCELLED, ownOrderOnly: true },
+    dependencies,
+  );
+
+export const updateOrderStatus = (input, dependencies) =>
+  transitionOrder(input, dependencies);

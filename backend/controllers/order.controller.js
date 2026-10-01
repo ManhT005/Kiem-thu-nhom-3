@@ -1,5 +1,9 @@
 import db from "../config/db.js";
-import { createOrder as createOrderService } from "../services/order.service.js";
+import {
+    cancelOrder as cancelOrderService,
+    createOrder as createOrderService,
+    updateOrderStatus as updateOrderStatusService,
+} from "../services/order.service.js";
 import { success } from "../utils/api-response.js";
 
 // ====================== TẠO ĐƠN HÀNG ===========================
@@ -118,32 +122,37 @@ export const getAllOrders = (req, res) => {
 };
 
 // ====================== STAFF/ADMIN: CẬP NHẬT TRẠNG THÁI ===========================
-export const updateOrderStatus = (req, res) => {
-    const { id } = req.params; // Lấy mã đơn hàng từ URL
-    const { trangThai } = req.body; // Lấy trạng thái mới từ body
-
-    // 1. Kiểm tra đơn hàng cũ
-    db.query("SELECT trangThai FROM DonHang WHERE maDonHang = ?", [id], (err, rows) => {
-        if (err || rows.length === 0) return res.status(500).json({ message: "Lỗi tìm đơn hàng" });
-        
-        // 2. Cập nhật trạng thái
-        db.query("UPDATE DonHang SET trangThai = ? WHERE maDonHang = ?", [trangThai, id], (updateErr) => {
-            if (updateErr) return res.status(500).json({ message: "Lỗi cập nhật" });
-
-            // 3. LOGIC HOÀN KHO (Nếu hủy đơn -> cộng lại số lượng)
-            if (trangThai === 'Đã hủy') {
-                const qDetail = "SELECT maSP, maSize, soLuongMua FROM ChiTietDonHang WHERE maDonHang = ?";
-                db.query(qDetail, [id], (dErr, items) => {
-                    if (!dErr && items) {
-                        items.forEach(item => {
-                            const qRestore = "UPDATE ChiTietSanPham SET soLuongTon = soLuongTon + ? WHERE maSP = ? AND maSize = ?";
-                            db.query(qRestore, [item.soLuongMua, item.maSP, item.maSize]);
-                        });
-                    }
-                });
-            }
-
-            res.status(200).json({ message: "Cập nhật thành công!" });
+export const updateOrderStatus = async (req, res, next) => {
+    try {
+        const order = await updateOrderStatusService({
+            orderId: req.params.id,
+            targetStatus: req.body.trangThai,
+            actorId: req.user.id,
+            reason: req.body.lyDo,
         });
-    });
+        return success(res, {
+            code: "ORDER_STATUS_UPDATED",
+            message: "Order status updated successfully",
+            data: order,
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const cancelOrder = async (req, res, next) => {
+    try {
+        const order = await cancelOrderService({
+            orderId: req.params.id,
+            actorId: req.user.id,
+            reason: req.body?.lyDo,
+        });
+        return success(res, {
+            code: "ORDER_CANCELLED",
+            message: "Order cancelled successfully",
+            data: order,
+        });
+    } catch (error) {
+        return next(error);
+    }
 };

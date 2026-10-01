@@ -1,4 +1,5 @@
 import { body, param } from "express-validator";
+import { ORDER_STATUS_VALUES } from "../domain/order-status.js";
 
 export const createOrderValidation = [
   body("tenNguoiNhan")
@@ -35,4 +36,14 @@ export const createOrderValidation = [
 ];
 export const orderIdValidation = [
   param("id").isInt({ min: 1 }).withMessage("id must be a positive integer"),
+];
+
+export const orderStatusValidation = [
+  body("trangThai")
+    .isIn(ORDER_STATUS_VALUES)
+    .withMessage("trangThai must be a known order status"),
+  body("lyDo")
+    .optional({ nullable: true })
+    .isLength({ max: 500 })
+    .withMessage("lyDo must be at most 500 characters"),
 ];

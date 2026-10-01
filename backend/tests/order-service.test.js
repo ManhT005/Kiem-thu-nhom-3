@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createOrder } from "../services/order.service.js";
+import {
+  cancelOrder,
+  createOrder,
+  updateOrderStatus,
+} from "../services/order.service.js";
 import { ORDER_STATUS } from "../domain/order-status.js";
 
 const makeRepository = ({ stock = 10 } = {}) => {
@@ -40,6 +44,30 @@ const makeRepository = ({ stock = 10 } = {}) => {
 };
 
 const transaction = async (work) => work({});
+
+const makeLifecycleRepository = ({ ownerId = 3, status = ORDER_STATUS.PENDING } = {}) => {
+  const state = { ownerId, status, stock: 8, history: [] };
+  const repository = {
+    async lockOrder() {
+      return { maDonHang: 42, id: state.ownerId, trangThai: state.status };
+    },
+    async getOrderItems() {
+      return [{ maSP: 1, maSize: 2, soLuongMua: 2 }];
+    },
+    async restoreStock(_connection, item) {
+      state.stock += item.soLuongMua;
+      return 1;
+    },
+    async updateOrderStatus(_connection, _orderId, nextStatus) {
+      state.status = nextStatus;
+      return 1;
+    },
+    async insertHistory(_connection, entry) {
+      state.history.push(entry);
+    },
+  };
+  return { repository, state };
+};
 
 test("prices order items from locked products and ignores client totals", async () => {
   const { calls, repository } = makeRepository();
@@ -120,4 +148,43 @@ test("checks every locked stock row before creating an order", async () => {
   );
   assert.equal(calls.some(([name]) => name === "insertOrder"), false);
   assert.equal(calls.some(([name]) => name === "reduceStock"), false);
+});
+
+test("cancels an owned pending order once and restores stock once", async () => {
+  const { repository, state } = makeLifecycleRepository();
+  const input = { orderId: 42, actorId: 3 };
+
+  await cancelOrder(input, { transaction, repository });
+  assert.equal(state.status, ORDER_STATUS.CANCELLED);
+  assert.equal(state.stock, 10);
+  assert.equal(state.history.length, 1);
+
+  await assert.rejects(cancelOrder(input, { transaction, repository }), {
+    code: "ORDER_ALREADY_CANCELLED",
+  });
+  assert.equal(state.stock, 10);
+  assert.equal(state.history.length, 1);
+});
+
+test("prevents users from cancelling another owner's order", async () => {
+  const { repository, state } = makeLifecycleRepository({ ownerId: 99 });
+  await assert.rejects(
+    cancelOrder({ orderId: 42, actorId: 3 }, { transaction, repository }),
+    { code: "ORDER_ACCESS_DENIED" },
+  );
+  assert.equal(state.stock, 8);
+  assert.equal(state.history.length, 0);
+});
+
+test("rejects invalid transitions before restoring stock", async () => {
+  const { repository, state } = makeLifecycleRepository();
+  await assert.rejects(
+    updateOrderStatus(
+      { orderId: 42, actorId: 8, targetStatus: ORDER_STATUS.SHIPPING },
+      { transaction, repository },
+    ),
+    { code: "INVALID_ORDER_TRANSITION" },
+  );
+  assert.equal(state.status, ORDER_STATUS.PENDING);
+  assert.equal(state.stock, 8);
 });

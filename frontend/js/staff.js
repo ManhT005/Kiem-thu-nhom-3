@@ -217,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 : ""
                             }>
                         <option value="Chờ xác nhận" ${order.trangThai === "Chờ xác nhận" ? "selected" : ""}>Chờ xác nhận</option>
-                        <option value="Đang xử lý" ${order.trangThai === "Đang xử lý" ? "selected" : ""}>Đang xử lý</option>
+                        <option value="Đã xác nhận" ${order.trangThai === "Đã xác nhận" ? "selected" : ""}>Đã xác nhận</option>
                         <option value="Đang giao" ${order.trangThai === "Đang giao" ? "selected" : ""}>Đang giao</option>
                         <option value="Hoàn thành" ${order.trangThai === "Hoàn thành" ? "selected" : ""}>Hoàn thành</option>
                         <option value="Đã hủy" ${order.trangThai === "Đã hủy" ? "selected" : ""}>Hủy đơn</option>
@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
     switch (status) {
       case "Chờ xác nhận":
         return "pending";
-      case "Đang xử lý":
+      case "Đã xác nhận":
         return "processing";
       case "Đang giao":
         return "shipping";

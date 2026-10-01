@@ -316,13 +316,13 @@ async function cancelOrder(orderId) {
   if (!token) return alert("Vui lòng đăng nhập lại!");
 
   try {
-    const res = await fetch(`/api/orders/${orderId}/status`, {
+    const res = await fetch(`/api/orders/${orderId}/cancel`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ trangThai: "Đã hủy" }),
+      body: JSON.stringify({}),
     });
 
     const data = await res.json();

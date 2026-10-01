@@ -86,4 +86,42 @@ export const orderRepository = {
       ],
     );
   },
+
+  async lockOrder(connection, orderId) {
+    const [rows] = await connection.execute(
+      "SELECT maDonHang, id, trangThai FROM DonHang WHERE maDonHang = ? FOR UPDATE",
+      [orderId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async getOrderItems(connection, orderId) {
+    const [rows] = await connection.execute(
+      `SELECT maSP, maSize, soLuongMua
+       FROM ChiTietDonHang
+       WHERE maDonHang = ?
+       ORDER BY maSP, maSize
+       FOR UPDATE`,
+      [orderId],
+    );
+    return rows;
+  },
+
+  async restoreStock(connection, item) {
+    const [result] = await connection.execute(
+      `UPDATE ChiTietSanPham
+       SET soLuongTon = soLuongTon + ?
+       WHERE maSP = ? AND maSize = ?`,
+      [item.soLuongMua, item.maSP, item.maSize],
+    );
+    return result.affectedRows;
+  },
+
+  async updateOrderStatus(connection, orderId, status) {
+    const [result] = await connection.execute(
+      "UPDATE DonHang SET trangThai = ? WHERE maDonHang = ?",
+      [status, orderId],
+    );
+    return result.affectedRows;
+  },
 };

@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  cancelOrder,
   createOrder,
   getMyOrders,
   getAllOrders,
@@ -11,6 +12,7 @@ import { validate } from "../middleware/validate.middleware.js";
 import {
   createOrderValidation,
   orderIdValidation,
+  orderStatusValidation,
 } from "../validators/order.validator.js";
 
 const router = express.Router();
@@ -25,6 +27,7 @@ router.post(
 );
 // GET /api/orders/my-orders - Xem lịch sử đơn hàng
 router.get("/my-orders", verifyToken, getMyOrders);
+router.put("/:id/cancel", verifyToken, orderIdValidation, validate, cancelOrder);
 // GET /api/orders/all - Lấy tất cả đơn hàng (admin)
 router.get("/all", verifyToken, authorizeRoles("admin", "staff"), getAllOrders);
 // PUT /api/orders/:orderId/status - Cập nhật trạng thái đơn hàng (admin)
@@ -33,6 +36,7 @@ router.put(
   verifyToken,
   authorizeRoles("admin", "staff"),
   orderIdValidation,
+  orderStatusValidation,
   validate,
   updateOrderStatus,
 );
