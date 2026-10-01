@@ -12,7 +12,7 @@
 
 ## Database and tests
 
-`npm run db:reset` applies migrations `001` and `002` before reference seeds. The reset command drops and recreates the configured database.
+`npm run db:reset` applies migrations `001` and `002` before reference seeds. Migration `002` normalizes known legacy statuses and records those conversions in the audit table. The reset command drops and recreates the configured database.
 
 Run `npm run test:backend` for isolated unit coverage. Run `npm run test:order-concurrency` only against a dedicated MySQL database whose name ends in `_test`; the test creates and removes its own user, product, order, and audit fixtures.
 
