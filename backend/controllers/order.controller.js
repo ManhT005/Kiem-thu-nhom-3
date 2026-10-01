@@ -1,81 +1,20 @@
 import db from "../config/db.js";
+import { createOrder as createOrderService } from "../services/order.service.js";
+import { success } from "../utils/api-response.js";
 
 // ====================== TẠO ĐƠN HÀNG ===========================
-export const createOrder = (req, res) => {
-  const userId = req.user.id;
-  const { tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, items, tongTien, maPTTT } = req.body;
-
-  if (!items || items.length === 0) {
-    return res.status(400).json({ message: "Không có sản phẩm nào để đặt hàng" });
-  }
-
-  // 1. Tạo đơn hàng
-  const queryOrder = `
-    INSERT INTO DonHang (id, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT, trangThai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'Chờ xác nhận')
-  `;
-
-  db.query(
-    queryOrder,
-    [userId, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT || 1],
-    (err, result) => {
-      if (err) return res.status(500).json({ message: "Lỗi tạo đơn hàng: " + err.message });
-
-      const maDonHang = result.insertId;
-
-      // 2. Chuẩn bị dữ liệu chi tiết
-      const orderDetails = items.map(item => [
-        maDonHang,
-        item.maSP,
-        item.maSize,
-        item.soLuongMua,
-        item.gia
-      ]);
-
-      const queryDetails = `INSERT INTO ChiTietDonHang (maDonHang, maSP, maSize, soLuongMua, giaMua) VALUES ?`;
-
-      db.query(queryDetails, [orderDetails], (err) => {
-        if (err) return res.status(500).json({ message: "Lỗi lưu chi tiết đơn: " + err.message });
-
-        // 3. Xử lý: Xóa giỏ hàng VÀ Trừ kho sản phẩm
-        const getCartQuery = "SELECT maGioHang FROM GioHang WHERE userId = ?";
-        db.query(getCartQuery, [userId], (err, cartRows) => {
-            // Lấy mã giỏ hàng (nếu có lỗi hoặc không có thì bỏ qua bước xóa giỏ)
-            const maGioHang = (cartRows && cartRows.length > 0) ? cartRows[0].maGioHang : null;
-
-            items.forEach(item => {
-                // A. Xóa sản phẩm khỏi giỏ hàng (nếu tìm thấy giỏ hàng)
-                if (maGioHang) {
-                    db.query(
-                        "DELETE FROM ChiTietGioHang WHERE maGioHang = ? AND maSP = ? AND maSize = ?",
-                        [maGioHang, item.maSP, item.maSize]
-                    );
-                }
-
-                // B. [MỚI THÊM] Trừ số lượng tồn kho trong bảng ChiTietSanPham
-                const updateStockQuery = `
-                    UPDATE ChiTietSanPham 
-                    SET soLuongTon = soLuongTon - ? 
-                    WHERE maSP = ? AND maSize = ? AND soLuongTon >= ?
-                `;
-                
-                // Tham số: [Số lượng mua, Mã SP, Mã Size, Số lượng mua (để đảm bảo không bị âm kho)]
-                db.query(
-                    updateStockQuery, 
-                    [item.soLuongMua, item.maSP, item.maSize, item.soLuongMua],
-                    (stockErr) => {
-                        if (stockErr) {
-                            console.error(`Lỗi trừ kho SP ${item.maSP} Size ${item.maSize}:`, stockErr);
-                        }
-                    }
-                );
-            });
+export const createOrder = async (req, res, next) => {
+    try {
+        const order = await createOrderService({ ...req.body, userId: req.user.id });
+        return success(res, {
+            status: 201,
+            code: "ORDER_CREATED",
+            message: "Order created successfully",
+            data: order,
         });
-
-        res.status(201).json({ message: "Đặt hàng thành công!", maDonHang });
-      });
+    } catch (error) {
+        return next(error);
     }
-  );
 };
 
 // ====================== LẤY ĐƠN HÀNG CỦA TÔI  ===========================
