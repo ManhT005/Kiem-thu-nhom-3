@@ -11,7 +11,11 @@ const integrationEnabled =
 
 test(
   "serializes concurrent orders so stock=1 cannot be oversold",
-  { skip: integrationEnabled ? false : "Set ORDER_CONCURRENCY_TEST=1 and use a *_test database" },
+  {
+    skip: integrationEnabled
+      ? false
+      : "Set ORDER_CONCURRENCY_TEST=1 and use a *_test database",
+  },
   async () => {
     const pool = db.promise();
     const userEmail = `order-concurrency-${randomUUID()}@example.test`;
@@ -25,7 +29,10 @@ test(
       const [sizes] = await pool.execute(
         "SELECT maSize FROM \`Size\` ORDER BY maSize LIMIT 1",
       );
-      assert.ok(paymentMethods.length > 0, "test database needs payment reference data");
+      assert.ok(
+        paymentMethods.length > 0,
+        "test database needs payment reference data",
+      );
       assert.ok(sizes.length > 0, "test database needs size reference data");
 
       const [userResult] = await pool.execute(
@@ -58,8 +65,12 @@ test(
         createOrder(input),
         createOrder(input),
       ]);
-      const fulfilled = outcomes.filter((outcome) => outcome.status === "fulfilled");
-      const rejected = outcomes.filter((outcome) => outcome.status === "rejected");
+      const fulfilled = outcomes.filter(
+        (outcome) => outcome.status === "fulfilled",
+      );
+      const rejected = outcomes.filter(
+        (outcome) => outcome.status === "rejected",
+      );
       assert.equal(fulfilled.length, 1, "exactly one order should succeed");
       assert.equal(rejected.length, 1, "exactly one order should be rejected");
       assert.equal(rejected[0].reason.code, "INSUFFICIENT_STOCK");

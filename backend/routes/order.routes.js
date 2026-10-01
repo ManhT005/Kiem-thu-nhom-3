@@ -30,7 +30,13 @@ router.post(
 );
 // GET /api/orders/my-orders - Xem lịch sử đơn hàng
 router.get("/my-orders", verifyToken, getMyOrders);
-router.put("/:id/cancel", verifyToken, orderIdValidation, validate, cancelOrder);
+router.put(
+  "/:id/cancel",
+  verifyToken,
+  orderIdValidation,
+  validate,
+  cancelOrder,
+);
 // GET /api/orders/all - Lấy tất cả đơn hàng (admin)
 router.get("/all", verifyToken, authorizeRoles("admin", "staff"), getAllOrders);
 router.get(
@@ -41,7 +47,13 @@ router.get(
   validate,
   getFilteredOrders,
 );
-router.get("/:id/history", verifyToken, orderIdValidation, validate, getOrderHistory);
+router.get(
+  "/:id/history",
+  verifyToken,
+  orderIdValidation,
+  validate,
+  getOrderHistory,
+);
 // PUT /api/orders/:orderId/status - Cập nhật trạng thái đơn hàng (admin)
 router.put(
   "/:id/status",

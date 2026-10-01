@@ -13,7 +13,9 @@ export const createOrderValidation = [
   body("diaChiGiaoHang")
     .trim()
     .isLength({ min: 1, max: 255 })
-    .withMessage("diaChiGiaoHang is required and must be at most 255 characters"),
+    .withMessage(
+      "diaChiGiaoHang is required and must be at most 255 characters",
+    ),
   body("maPTTT")
     .isInt({ min: 1 })
     .withMessage("maPTTT must be a positive integer"),
@@ -61,10 +63,12 @@ export const orderFilterValidation = [
     .optional()
     .isISO8601({ strict: true })
     .withMessage("toDate must be an ISO date"),
-  query("toDate").custom((toDate, { req }) => {
-    if (!toDate || !req.query.fromDate) return true;
-    return Date.parse(req.query.fromDate) <= Date.parse(toDate);
-  }).withMessage("toDate must not be before fromDate"),
+  query("toDate")
+    .custom((toDate, { req }) => {
+      if (!toDate || !req.query.fromDate) return true;
+      return Date.parse(req.query.fromDate) <= Date.parse(toDate);
+    })
+    .withMessage("toDate must not be before fromDate"),
   query("minTotal")
     .optional()
     .isFloat({ min: 0 })
@@ -73,10 +77,13 @@ export const orderFilterValidation = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage("maxTotal must be non-negative"),
-  query("maxTotal").custom((maxTotal, { req }) => {
-    if (maxTotal === undefined || req.query.minTotal === undefined) return true;
-    return Number(maxTotal) >= Number(req.query.minTotal);
-  }).withMessage("maxTotal must be at least minTotal"),
+  query("maxTotal")
+    .custom((maxTotal, { req }) => {
+      if (maxTotal === undefined || req.query.minTotal === undefined)
+        return true;
+      return Number(maxTotal) >= Number(req.query.minTotal);
+    })
+    .withMessage("maxTotal must be at least minTotal"),
   query("keyword")
     .optional()
     .trim()

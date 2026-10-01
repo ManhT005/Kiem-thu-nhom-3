@@ -30,7 +30,11 @@ const prepareItems = (items) => {
         item.soLuongMua < 1,
     )
   ) {
-    throw new AppError(400, "ORDER_INVALID_ITEM", "Order contains an invalid item");
+    throw new AppError(
+      400,
+      "ORDER_INVALID_ITEM",
+      "Order contains an invalid item",
+    );
   }
 
   const keys = normalized.map((item) => `${item.maSP}:${item.maSize}`);
@@ -42,8 +46,8 @@ const prepareItems = (items) => {
     );
   }
 
-  return normalized.sort((left, right) =>
-    left.maSP - right.maSP || left.maSize - right.maSize,
+  return normalized.sort(
+    (left, right) => left.maSP - right.maSP || left.maSize - right.maSize,
   );
 };
 
@@ -55,7 +59,11 @@ export const createOrder = async (
   const paymentMethodId = Number(input.maPTTT);
 
   if (!Number.isSafeInteger(paymentMethodId) || paymentMethodId < 1) {
-    throw new AppError(400, "VALIDATION_ERROR", "maPTTT must be a positive integer");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "maPTTT must be a positive integer",
+    );
   }
 
   return transaction(async (connection) => {
@@ -64,7 +72,11 @@ export const createOrder = async (
       paymentMethodId,
     );
     if (!paymentMethod) {
-      throw new AppError(404, "PAYMENT_METHOD_NOT_FOUND", "Payment method not found");
+      throw new AppError(
+        404,
+        "PAYMENT_METHOD_NOT_FOUND",
+        "Payment method not found",
+      );
     }
 
     const pricedItems = [];
@@ -116,7 +128,11 @@ export const createOrder = async (
       await repository.insertOrderItem(connection, orderId, item);
       const affectedRows = await repository.reduceStock(connection, item);
       if (affectedRows !== 1) {
-        throw new AppError(409, "STOCK_UPDATE_FAILED", "Unable to reserve stock");
+        throw new AppError(
+          409,
+          "STOCK_UPDATE_FAILED",
+          "Unable to reserve stock",
+        );
       }
     }
 
@@ -144,7 +160,11 @@ const restoreOrderStock = async (connection, orderId, repository) => {
   for (const item of items) {
     const affectedRows = await repository.restoreStock(connection, item);
     if (affectedRows !== 1) {
-      throw new AppError(409, "STOCK_RESTORE_FAILED", "Unable to restore stock");
+      throw new AppError(
+        409,
+        "STOCK_RESTORE_FAILED",
+        "Unable to restore stock",
+      );
     }
   }
 };
@@ -155,7 +175,11 @@ const transitionOrder = async (
 ) => {
   const normalizedOrderId = Number(orderId);
   if (!Number.isSafeInteger(normalizedOrderId) || normalizedOrderId < 1) {
-    throw new AppError(400, "VALIDATION_ERROR", "Order id must be a positive integer");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "Order id must be a positive integer",
+    );
   }
   if (!isOrderStatus(targetStatus)) {
     throw new AppError(400, "INVALID_ORDER_STATUS", "Unknown order status");
@@ -167,10 +191,18 @@ const transitionOrder = async (
       throw new AppError(404, "ORDER_NOT_FOUND", "Order not found");
     }
     if (ownOrderOnly && Number(order.id) !== Number(actorId)) {
-      throw new AppError(403, "ORDER_ACCESS_DENIED", "Order does not belong to this user");
+      throw new AppError(
+        403,
+        "ORDER_ACCESS_DENIED",
+        "Order does not belong to this user",
+      );
     }
     if (order.trangThai === ORDER_STATUS.CANCELLED) {
-      throw new AppError(409, "ORDER_ALREADY_CANCELLED", "Order is already cancelled");
+      throw new AppError(
+        409,
+        "ORDER_ALREADY_CANCELLED",
+        "Order is already cancelled",
+      );
     }
     if (ownOrderOnly && order.trangThai !== ORDER_STATUS.PENDING) {
       throw new AppError(
@@ -180,7 +212,11 @@ const transitionOrder = async (
       );
     }
     if (order.trangThai === targetStatus) {
-      throw new AppError(409, "ORDER_STATUS_UNCHANGED", "Order status is unchanged");
+      throw new AppError(
+        409,
+        "ORDER_STATUS_UNCHANGED",
+        "Order status is unchanged",
+      );
     }
     if (!isOrderTransitionAllowed(order.trangThai, targetStatus)) {
       throw new AppError(
@@ -200,7 +236,11 @@ const transitionOrder = async (
       targetStatus,
     );
     if (affectedRows !== 1) {
-      throw new AppError(409, "ORDER_STATUS_UPDATE_FAILED", "Unable to update order status");
+      throw new AppError(
+        409,
+        "ORDER_STATUS_UPDATE_FAILED",
+        "Unable to update order status",
+      );
     }
 
     await repository.insertHistory(connection, {
@@ -261,9 +301,10 @@ export const getMyOrders = async (
   { executor = db.promise(), repository = orderRepository } = {},
 ) => mapOrderRows(await repository.getMyOrderRows(executor, userId));
 
-export const getAllOrders = async (
-  { executor = db.promise(), repository = orderRepository } = {},
-) => mapOrderRows(await repository.getAllOrderRows(executor));
+export const getAllOrders = async ({
+  executor = db.promise(),
+  repository = orderRepository,
+} = {}) => mapOrderRows(await repository.getAllOrderRows(executor));
 
 export const getOrderHistory = async (
   { orderId, actorId, role },
@@ -271,7 +312,11 @@ export const getOrderHistory = async (
 ) => {
   const normalizedOrderId = Number(orderId);
   if (!Number.isSafeInteger(normalizedOrderId) || normalizedOrderId < 1) {
-    throw new AppError(400, "VALIDATION_ERROR", "Order id must be a positive integer");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "Order id must be a positive integer",
+    );
   }
 
   const order = await repository.getOrderOwner(executor, normalizedOrderId);
@@ -280,7 +325,11 @@ export const getOrderHistory = async (
     !["admin", "staff"].includes(role) &&
     Number(order.id) !== Number(actorId)
   ) {
-    throw new AppError(403, "ORDER_ACCESS_DENIED", "Order does not belong to this user");
+    throw new AppError(
+      403,
+      "ORDER_ACCESS_DENIED",
+      "Order does not belong to this user",
+    );
   }
 
   return repository.getOrderHistory(executor, normalizedOrderId);
@@ -293,34 +342,60 @@ const validateOrderFilters = (filters) => {
 
   const page = filters.page === undefined ? 1 : Number(filters.page);
   const limit = filters.limit === undefined ? 20 : Number(filters.limit);
-  const minTotal = filters.minTotal === undefined ? undefined : Number(filters.minTotal);
-  const maxTotal = filters.maxTotal === undefined ? undefined : Number(filters.maxTotal);
+  const minTotal =
+    filters.minTotal === undefined ? undefined : Number(filters.minTotal);
+  const maxTotal =
+    filters.maxTotal === undefined ? undefined : Number(filters.maxTotal);
 
   if (!Number.isSafeInteger(page) || page < 1) {
-    throw new AppError(400, "VALIDATION_ERROR", "page must be a positive integer");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "page must be a positive integer",
+    );
   }
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-    throw new AppError(400, "VALIDATION_ERROR", "limit must be between 1 and 100");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "limit must be between 1 and 100",
+    );
   }
   const offset = (page - 1) * limit;
   if (!Number.isSafeInteger(offset)) {
     throw new AppError(400, "VALIDATION_ERROR", "page is too large");
   }
   if (minTotal !== undefined && (!Number.isFinite(minTotal) || minTotal < 0)) {
-    throw new AppError(400, "VALIDATION_ERROR", "minTotal must be non-negative");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "minTotal must be non-negative",
+    );
   }
   if (maxTotal !== undefined && (!Number.isFinite(maxTotal) || maxTotal < 0)) {
-    throw new AppError(400, "VALIDATION_ERROR", "maxTotal must be non-negative");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "maxTotal must be non-negative",
+    );
   }
   if (minTotal !== undefined && maxTotal !== undefined && minTotal > maxTotal) {
-    throw new AppError(400, "VALIDATION_ERROR", "maxTotal must be at least minTotal");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "maxTotal must be at least minTotal",
+    );
   }
   if (
     filters.fromDate &&
     filters.toDate &&
     Date.parse(filters.fromDate) > Date.parse(filters.toDate)
   ) {
-    throw new AppError(400, "VALIDATION_ERROR", "fromDate must not be after toDate");
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "fromDate must not be after toDate",
+    );
   }
 
   return {

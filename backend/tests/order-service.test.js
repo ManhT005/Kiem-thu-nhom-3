@@ -48,7 +48,10 @@ const makeRepository = ({ stock = 10 } = {}) => {
 
 const transaction = async (work) => work({});
 
-const makeLifecycleRepository = ({ ownerId = 3, status = ORDER_STATUS.PENDING } = {}) => {
+const makeLifecycleRepository = ({
+  ownerId = 3,
+  status = ORDER_STATUS.PENDING,
+} = {}) => {
   const state = { ownerId, status, stock: 8, history: [] };
   const repository = {
     async lockOrder() {
@@ -96,17 +99,17 @@ test("prices order items from locked products and ignores client totals", async 
   );
   assert.equal(result.tongTien, 375);
   assert.equal(result.trangThai, ORDER_STATUS.PENDING);
-  assert.equal(
-    calls.find(([name]) => name === "insertOrder")[1].tongTien,
-    375,
-  );
+  assert.equal(calls.find(([name]) => name === "insertOrder")[1].tongTien, 375);
   assert.deepEqual(
     calls
       .filter(([name]) => name === "insertItem")
       .map(([, , item]) => item.giaMua),
     [125, 125],
   );
-  assert.equal(calls.some(([name]) => name === "history"), true);
+  assert.equal(
+    calls.some(([name]) => name === "history"),
+    true,
+  );
 });
 
 test("rejects duplicate variants before opening a transaction", async () => {
@@ -149,8 +152,14 @@ test("checks every locked stock row before creating an order", async () => {
     ),
     { code: "INSUFFICIENT_STOCK" },
   );
-  assert.equal(calls.some(([name]) => name === "insertOrder"), false);
-  assert.equal(calls.some(([name]) => name === "reduceStock"), false);
+  assert.equal(
+    calls.some(([name]) => name === "insertOrder"),
+    false,
+  );
+  assert.equal(
+    calls.some(([name]) => name === "reduceStock"),
+    false,
+  );
 });
 
 test("rolls back order writes when stock reservation fails", async () => {
@@ -199,7 +208,10 @@ test("rolls back order writes when stock reservation fails", async () => {
     { code: "STOCK_UPDATE_FAILED" },
   );
 
-  assert.equal(calls.some(([name]) => name === "insertOrder"), true);
+  assert.equal(
+    calls.some(([name]) => name === "insertOrder"),
+    true,
+  );
   assert.deepEqual(events, ["begin", "rollback", "release"]);
 });
 
@@ -249,19 +261,21 @@ test("filters orders with bound parameters and returns page metadata", async () 
       calls.push({ sql, values });
       if (sql.includes("COUNT(*)")) return [[{ total: 3 }]];
       if (sql.includes("LIMIT ? OFFSET ?")) return [[{ maDonHang: 42 }]];
-      return [[
-        {
-          maDonHang: 42,
-          trangThai: ORDER_STATUS.PENDING,
-          tongTien: 50,
-          maSP: 2,
-          maSize: 4,
-          soLuongMua: 1,
-          giaMua: 50,
-          tenSP: "Shirt",
-          tenSize: "M",
-        },
-      ]];
+      return [
+        [
+          {
+            maDonHang: 42,
+            trangThai: ORDER_STATUS.PENDING,
+            tongTien: 50,
+            maSP: 2,
+            maSize: 4,
+            soLuongMua: 1,
+            giaMua: 50,
+            tenSP: "Shirt",
+            tenSize: "M",
+          },
+        ],
+      ];
     },
   };
 
