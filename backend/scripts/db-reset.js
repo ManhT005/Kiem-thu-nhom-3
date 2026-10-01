@@ -25,11 +25,15 @@ try {
     path.resolve("database/migrations/001_initial_schema.sql"),
     "utf8",
   );
+  const orderMigration = await fs.readFile(
+    path.resolve("database/migrations/002_order_integrity.sql"),
+    "utf8",
+  );
   const seed = await fs.readFile(
     path.resolve("database/seeds/001_reference_data.sql"),
     "utf8",
   );
-  await connection.query(`${migration}\n${seed}`);
+  await connection.query(`${migration}\n${orderMigration}\n${seed}`);
   console.log(`Database ${databaseName} reset successfully.`);
 } finally {
   await connection.end();
