@@ -24,6 +24,7 @@ const router = express.Router();
 router.post(
   "/create",
   verifyToken,
+  authorizeRoles("user"),
   createOrderValidation,
   validate,
   createOrder,
@@ -33,6 +34,7 @@ router.get("/my-orders", verifyToken, getMyOrders);
 router.put(
   "/:id/cancel",
   verifyToken,
+  authorizeRoles("user"),
   orderIdValidation,
   validate,
   cancelOrder,
