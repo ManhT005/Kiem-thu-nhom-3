@@ -16,6 +16,8 @@ const connection = await mysql.createConnection({
 });
 
 const passwordHash = bcrypt.hashSync("Phase2Test!", 10);
+const sizeId = 92901;
+const paymentMethodId = 92901;
 const users = [
   [92001, "Phase 2 User A", "phase2-user-a@example.test", "user"],
   [92002, "Phase 2 User B", "phase2-user-b@example.test", "user"],
@@ -27,17 +29,24 @@ const products = [
   [93002, "Phase 2 stock 1", 2000, 1],
   [93003, "Phase 2 stock 5", 3000, 5],
   [93004, "Phase 2 stock 10", 4000, 10],
+  [93005, "Phase 2 stock 0 second item", 5000, 0],
 ];
 
 try {
-  const [sizes] = await connection.execute(
-    "SELECT maSize FROM `Size` WHERE tenSize = 'M' LIMIT 1",
-  );
-  if (!sizes.length) {
-    throw new Error("Run db:reset before seeding Phase 2 test fixtures");
-  }
-
   await connection.beginTransaction();
+  await connection.execute(
+    `INSERT INTO \`Size\` (maSize, tenSize) VALUES (?, 'P2-M')
+     ON DUPLICATE KEY UPDATE tenSize = VALUES(tenSize)`,
+    [sizeId],
+  );
+  await connection.execute(
+    `INSERT INTO phuongThucThanhToan (maPTTT, tenPTTT)
+     VALUES (?, 'P2_COD')
+     ON DUPLICATE KEY UPDATE tenPTTT = VALUES(tenPTTT)`,
+    [paymentMethodId],
+  );
+  await connection.execute("DELETE FROM DonHang WHERE id IN (92001, 92002)");
+
   for (const [id, name, email, role] of users) {
     await connection.execute(
       `INSERT INTO users (id, ten, email, sdt, matKhau, role)
@@ -60,7 +69,7 @@ try {
       `INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon)
        VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE soLuongTon = VALUES(soLuongTon)`,
-      [id, sizes[0].maSize, stock],
+      [id, sizeId, stock],
     );
   }
   await connection.commit();
