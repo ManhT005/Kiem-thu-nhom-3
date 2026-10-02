@@ -1,4 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (character) => {
+      const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return entities[character];
+    });
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
   const savedTab = localStorage.getItem("currentStaffTab") || "tabKho";
@@ -90,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
           sizeSummary = sp.sizes
             .map(
               (s) =>
-                `<span class="size-badge">${s.tenSize}: <b>${s.soLuongTon}</b></span>`,
+                `<span class="size-badge">${escapeHtml(s.tenSize)}: <b>${s.soLuongTon}</b></span>`,
             )
             .join(" ");
         }
@@ -204,26 +215,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const itemsHtml = order.items
           .map(
             (i) =>
-              `<div style="font-size:13px;">- ${i.tenSP} (${i.tenSize}) x${i.soLuongMua}</div>`,
+              `<div style="font-size:13px;">- ${escapeHtml(i.tenSP)} (${escapeHtml(i.tenSize)}) x${i.soLuongMua}</div>`,
           )
           .join("");
 
-        const statusSelect = `
-                    <select onchange="updateStatus(${order.maDonHang}, this.value)" 
-                            class="status-select status-${getStatusClass(order.trangThai)}"
-                            ${
-                              order.trangThai === "Đã hủy" ||
-                              order.trangThai === "Hoàn thành"
-                                ? "disabled"
-                                : ""
-                            }>
-                        <option value="Chờ xác nhận" ${order.trangThai === "Chờ xác nhận" ? "selected" : ""}>Chờ xác nhận</option>
-                        <option value="Đã xác nhận" ${order.trangThai === "Đã xác nhận" ? "selected" : ""}>Đã xác nhận</option>
-                        <option value="Đang giao" ${order.trangThai === "Đang giao" ? "selected" : ""}>Đang giao</option>
-                        <option value="Hoàn thành" ${order.trangThai === "Hoàn thành" ? "selected" : ""}>Hoàn thành</option>
-                        <option value="Đã hủy" ${order.trangThai === "Đã hủy" ? "selected" : ""}>Hủy đơn</option>
-                    </select>
-                `;
+        const statusSelect = buildStatusSelect(order);
 
         // [Thay đổi ở đây]: toLocaleString() thay vì toLocaleDateString()
         const formattedDate = new Date(order.ngayDat).toLocaleString("vi-VN");
@@ -231,9 +227,9 @@ document.addEventListener("DOMContentLoaded", () => {
         tr.innerHTML = `
                     <td>#${order.maDonHang}</td>
                     <td>
-                        <b>${order.tenNguoiNhan}</b><br>
-                        <small>${order.sdt}</small><br>
-                        <small style="color:#777; font-style:italic;">${order.diaChiGiaoHang}</small>
+                      <b>${escapeHtml(order.tenNguoiNhan)}</b><br>
+                      <small>${escapeHtml(order.sdt)}</small><br>
+                      <small style="color:#777; font-style:italic;">${escapeHtml(order.diaChiGiaoHang)}</small>
                     </td>
                     <td>${formattedDate}</td> 
                     <td>${itemsHtml}</td>
@@ -246,6 +242,31 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(err);
       tbody.innerHTML = "<tr><td colspan='6'>Lỗi tải dữ liệu</td></tr>";
     }
+  }
+
+  function buildStatusSelect(order) {
+    const transitions = {
+      "Chờ xác nhận": ["Đã xác nhận", "Đã hủy"],
+      "Đã xác nhận": ["Đang giao", "Đã hủy"],
+      "Đang giao": ["Hoàn thành"],
+      "Hoàn thành": [],
+      "Đã hủy": [],
+    };
+    const currentStatus = order.trangThai;
+    const allowedStatuses = transitions[currentStatus] || [];
+
+    if (allowedStatuses.length === 0) {
+      return `<span class="status-select status-${getStatusClass(currentStatus)}">${escapeHtml(currentStatus)}</span>`;
+    }
+
+    const options = [currentStatus, ...allowedStatuses]
+      .map(
+        (status) =>
+          `<option value="${escapeHtml(status)}" ${status === currentStatus ? "selected" : ""}>${escapeHtml(status)}</option>`,
+      )
+      .join("");
+
+    return `<select onchange="updateStatus(${Number(order.maDonHang)}, this.value)" class="status-select status-${getStatusClass(currentStatus)}">${options}</select>`;
   }
 
   function getStatusClass(status) {
@@ -289,10 +310,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
-        renderStaffOrders();
       } else {
         alert("Lỗi: " + data.message);
       }
+      await renderStaffOrders();
     } catch (err) {
       console.error(err);
       alert("Lỗi kết nối server");
