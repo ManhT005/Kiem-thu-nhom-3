@@ -1,7 +1,11 @@
 import "dotenv/config";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
+
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = path.resolve(scriptDirectory, "../..");
 
 const connection = await mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
@@ -14,7 +18,7 @@ const connection = await mysql.createConnection({
 
 try {
   const seed = await fs.readFile(
-    path.resolve("database/seeds/001_reference_data.sql"),
+    path.join(repositoryRoot, "database", "seeds", "001_reference_data.sql"),
     "utf8",
   );
   await connection.query(seed);
