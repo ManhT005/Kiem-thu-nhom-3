@@ -262,8 +262,7 @@ async function fetchOrders(token) {
                             <strong>Đơn hàng #${order.maDonHang}</strong>
                             <br><span style="font-size: 12px; color: #888;">${new Date(order.ngayDat).toLocaleString("vi-VN")}</span>
                         </div>
-                        <span class="status-badge" 
-                              style="padding: 4px 8px; border-radius: 4px; font-size: 12px; height: fit-content; background: #e0f2f1; color: #00695c;">
+                        <span class="status-badge ${getStatusClass(order.trangThai)}">
                             ${escapeHtml(order.trangThai)}
                         </span>
                     </div>
