@@ -30,7 +30,12 @@ router.post(
   createOrder,
 );
 // GET /api/orders/my-orders - Xem lịch sử đơn hàng
-router.get("/my-orders", verifyToken, getMyOrders);
+router.get(
+  "/my-orders",
+  verifyToken,
+  authorizeRoles("user"),
+  getMyOrders,
+);
 router.put(
   "/:id/cancel",
   verifyToken,

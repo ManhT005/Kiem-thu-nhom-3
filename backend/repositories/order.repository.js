@@ -222,7 +222,10 @@ export const orderRepository = {
     const total = Number(countRows[0]?.total || 0);
     if (total === 0) return { rows: [], total };
 
-    const [orderRows] = await executor.execute(
+    const queryMethod = executor.query
+      ? executor.query.bind(executor)
+      : executor.execute.bind(executor);
+    const [orderRows] = await queryMethod(
       `SELECT d.maDonHang
        FROM DonHang d
        ${clause}
