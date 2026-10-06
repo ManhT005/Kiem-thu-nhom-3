@@ -393,6 +393,126 @@
           ]
         },
         {
+          "name": "Create order with invalid variant returns 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [{ \"maSP\": 99999, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('ORDER_VARIANT_NOT_FOUND code', () => pm.expect(pm.response.json().code).to.eql('ORDER_VARIANT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order with duplicate variant returns 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [\n    { \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 },\n    { \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('ORDER_DUPLICATE_ITEM code', () => pm.expect(pm.response.json().code).to.eql('ORDER_DUPLICATE_ITEM'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order with invalid payment method returns 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 99999,\n  \"items\": [{ \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('PAYMENT_METHOD_NOT_FOUND code', () => pm.expect(pm.response.json().code).to.eql('PAYMENT_METHOD_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer cannot access all orders list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/all"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff cannot access my-orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/my-orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Non-owner cannot cancel the order",
           "request": {
             "method": "PUT",
@@ -580,7 +700,10 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{staffToken}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"trangThai\": \"Đang giao\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đang giao\"\n}"
+            },
             "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
           },
           "event": [
@@ -603,7 +726,10 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{staffToken}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"trangThai\": \"Đã xác nhận\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đã xác nhận\"\n}"
+            },
             "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
           },
           "event": [
@@ -626,7 +752,10 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{staffToken}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"trangThai\": \"Đang giao\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đang giao\"\n}"
+            },
             "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
           },
           "event": [
@@ -649,7 +778,10 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{staffToken}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"trangThai\": \"Hoàn thành\"\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Hoàn thành\"\n}"
+            },
             "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
           },
           "event": [
@@ -680,6 +812,113 @@
                 "exec": [
                   "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
                   "pm.test('owner cancellation rejected', () => pm.expect(pm.response.json().code).to.eql('ORDER_CANCEL_NOT_ALLOWED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner can access own order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('history is an array', () => pm.expect(Array.isArray(pm.response.json().data)).to.be.true);",
+                  "pm.test('history has transitions', () => pm.expect(pm.response.json().data.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other user cannot access order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userBToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('access denied code', () => pm.expect(pm.response.json().code).to.eql('ORDER_ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff can access order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('staff history is array', () => pm.expect(Array.isArray(pm.response.json().data)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff filter orders by status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/admin/filter?trangThai=Ho%C3%A0n%20th%C3%A0nh&page=1&limit=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ORDER_LIST_SUCCESS code', () => pm.expect(pm.response.json().code).to.eql('ORDER_LIST_SUCCESS'));",
+                  "pm.test('filter returns pagination', () => pm.expect(pm.response.json().data.pagination).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff filter with invalid status returns 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/admin/filter?trangThai=InvalidStatus"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error code', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
                 ]
               }
             }
