@@ -9,8 +9,19 @@ const repositoryRoot = path.resolve(scriptDirectory, "../..");
 const fileFromRepository = (...parts) => path.join(repositoryRoot, ...parts);
 
 const databaseName = process.env.DB_NAME || "clothes_db";
+if (!databaseName || databaseName === "mysql") {
+  throw new Error("Unsafe DB_NAME for db:reset");
+}
+
+if (
+  process.env.NODE_ENV === "production" ||
+  process.env.APP_ENV === "production"
+) {
+  throw new Error("db:reset is disabled in production");
+}
+
 const connection = await mysql.createConnection({
-  host: process.env.DB_HOST || "localhost",
+  host: process.env.DB_HOST || "127.0.0.1",
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
