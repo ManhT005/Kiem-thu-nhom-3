@@ -42,8 +42,9 @@ jobs:
       - run: npm ci
       - run: npm --prefix backend ci
       - run: npm run db:reset
-      - run: npm --prefix backend run db:seed:phase2:test
+      - run: npm run db:seed:phase2
       - run: npm run test:backend
+      - run: npm run test:integration
       - name: Start API
         run: |
           npm --prefix backend start > server.log 2>&1 &
