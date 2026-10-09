@@ -1,12 +1,34 @@
 import axios from "axios";
 import crypto from "node:crypto";
 
-const accessKey = process.env.MOMO_ACCESS_KEY || "F8BBA842ECF85";
-const secretKey = process.env.MOMO_SECRET_KEY || "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
 const requestType = "payWithATM";
 const extraData = "";
 const orderInfo = "Thanh toán đơn hàng quần áo";
+const ipnSignatureFields = [
+  "accessKey",
+  "amount",
+  "extraData",
+  "message",
+  "orderId",
+  "orderInfo",
+  "orderType",
+  "partnerCode",
+  "payType",
+  "requestId",
+  "responseTime",
+  "resultCode",
+  "transId",
+];
+
+const getMomoCredentials = () => {
+  const { MOMO_ACCESS_KEY: accessKey, MOMO_SECRET_KEY: secretKey } =
+    process.env;
+  if (!accessKey || !secretKey) {
+    throw new Error("MOMO_ACCESS_KEY and MOMO_SECRET_KEY are required");
+  }
+  return { accessKey, secretKey };
+};
 
 const getPaymentUrls = () => {
   const appBaseUrl = process.env.APP_BASE_URL?.replace(/\/+$/, "");
@@ -27,6 +49,7 @@ const getPaymentUrls = () => {
 };
 
 export const createMomoPaymentLink = async (amount) => {
+  const { accessKey, secretKey } = getMomoCredentials();
   const { redirectUrl, ipnUrl } = getPaymentUrls();
   const orderId = `MOMO${Date.now()}`;
   const requestId = orderId;
@@ -59,28 +82,37 @@ export const createMomoPaymentLink = async (amount) => {
   return response.data;
 };
 
-export const verifyMomoIpnSignature = (payload, key = secretKey) => {
-  const fields = [
-    "accessKey",
-    "amount",
-    "extraData",
-    "message",
-    "orderId",
-    "orderInfo",
-    "orderType",
-    "partnerCode",
-    "payType",
-    "requestId",
-    "responseTime",
-    "resultCode",
-    "transId",
-  ];
-  if (!payload || typeof payload.signature !== "string") return false;
-
-  const rawSignature = fields
-    .map((field) => `${field}=${payload[field] ?? ""}`)
+export const buildMomoIpnSignatureString = (payload, accessKey) => {
+  if (!accessKey) throw new Error("MOMO_ACCESS_KEY is required");
+  return ipnSignatureFields
+    .map((field) =>
+      field === "accessKey"
+        ? `accessKey=${accessKey}`
+        : `${field}=${payload[field] ?? ""}`,
+    )
     .join("&");
-  const expected = crypto.createHmac("sha256", key).update(rawSignature).digest();
+};
+
+export const verifyMomoIpnSignature = (
+  payload,
+  credentials = getMomoCredentials(),
+) => {
+  if (
+    !payload ||
+    typeof payload.signature !== "string" ||
+    !/^[a-f\d]{64}$/i.test(payload.signature)
+  ) {
+    return false;
+  }
+
+  const rawSignature = buildMomoIpnSignatureString(
+    payload,
+    credentials.accessKey,
+  );
+  const expected = crypto
+    .createHmac("sha256", credentials.secretKey)
+    .update(rawSignature)
+    .digest();
   const received = Buffer.from(payload.signature, "hex");
   return (
     received.length === expected.length &&
