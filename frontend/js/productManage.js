@@ -38,20 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const catDisplay =
         catNames.length > 0 ? catNames.join(", ") : "Chưa phân loại";
-      const imgSrc = p.anhSP ? `/Asset/${p.anhSP}` : "/Asset/no-image.jpg";
+      const productId = Number(p.maSP);
+      if (!Number.isSafeInteger(productId) || productId < 1) continue;
 
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${p.maSP}</td>
-        <td>${p.tenSP}</td>
-        <td>${Number(p.gia).toLocaleString()}</td>
-        <td>${catDisplay}</td>
-        <td><img src="${imgSrc}" width="50"></td>
-        <td>
-          <button class="edit-btn" data-id="${p.maSP}">Sửa</button>
-          <button class="delete-btn" data-id="${p.maSP}">Xóa</button>
-        </td>
-      `;
+      const idCell = document.createElement("td");
+      idCell.textContent = String(productId);
+      const nameCell = document.createElement("td");
+      nameCell.textContent = String(p.tenSP ?? "");
+      const priceCell = document.createElement("td");
+      priceCell.textContent = Number(p.gia).toLocaleString();
+      const categoryCell = document.createElement("td");
+      categoryCell.textContent = catDisplay;
+      const imageCell = document.createElement("td");
+      const image = document.createElement("img");
+      image.src = window.safeAssetUrl(p.anhSP);
+      image.alt = String(p.tenSP ?? "");
+      image.width = 50;
+      imageCell.appendChild(image);
+      const actionsCell = document.createElement("td");
+      const editButton = document.createElement("button");
+      editButton.className = "edit-btn";
+      editButton.dataset.id = String(productId);
+      editButton.textContent = "Sửa";
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-btn";
+      deleteButton.dataset.id = String(productId);
+      deleteButton.textContent = "Xóa";
+      actionsCell.append(editButton, deleteButton);
+      tr.append(idCell, nameCell, priceCell, categoryCell, imageCell, actionsCell);
       tbody.appendChild(tr);
     }
 
@@ -130,13 +145,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // 4. Xử lý Ảnh
     const imgDiv = document.getElementById("currentImage");
     if (imgDiv) {
-      if (p.anhSP) {
-        imgDiv.innerHTML = `<img src="/Asset/${p.anhSP}" width="80" style="margin-top:5px;">`;
-        imgDiv.dataset.oldimage = p.anhSP;
-        imgDiv.style.display = "block";
-      } else {
-        imgDiv.style.display = "none";
-      }
+      const image = document.createElement("img");
+      image.src = window.safeAssetUrl(p.anhSP);
+      image.alt = String(p.tenSP ?? "");
+      image.width = 80;
+      image.style.marginTop = "5px";
+      imgDiv.replaceChildren(image);
+      imgDiv.dataset.oldimage = String(p.anhSP ?? "");
+      imgDiv.style.display = p.anhSP ? "block" : "none";
     }
 
     // 5. Xử lý Danh mục
@@ -246,15 +262,23 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadCategories(selectedIds = []) {
     const data = await fetchData("categories");
     const container = document.getElementById("productCategoriesContainer");
-    container.innerHTML = "";
+    container.replaceChildren();
     (data.categories || []).forEach((c) => {
+      const categoryId = Number(c.maDanhMuc);
+      if (!Number.isSafeInteger(categoryId) || categoryId < 1) return;
       const div = document.createElement("div");
       div.className = "checkbox-wrapper";
-      div.innerHTML = `
-            <input type="checkbox" id="cat_${c.maDanhMuc}" value="${c.maDanhMuc}" 
-              ${selectedIds.includes(c.maDanhMuc) ? "checked" : ""}>
-            <label for="cat_${c.maDanhMuc}">${c.tenDanhMuc}</label>
-          `;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = `cat_${categoryId}`;
+      checkbox.value = String(categoryId);
+      checkbox.checked = selectedIds.some(
+        (selectedId) => Number(selectedId) === categoryId,
+      );
+      const label = document.createElement("label");
+      label.htmlFor = checkbox.id;
+      label.textContent = String(c.tenDanhMuc ?? "");
+      div.append(checkbox, label);
       container.appendChild(div);
     });
   }

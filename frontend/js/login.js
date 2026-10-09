@@ -61,11 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Điều hướng theo role
       if (data.user.role === "admin") {
-        window.location.href = "/html/admin.html";
+        window.location.href = "/admin";
       } else if (data.user.role === "staff") {
-        window.location.href = "/html/staff.html";
+        window.location.href = "/staff";
       } else {
-        window.location.href = "/html/index.html"; // khách hoặc user
+        window.location.href = "/"; // khách hoặc user
       }
     } catch (error) {
       console.error(error);
@@ -75,6 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Chuyển sang trang đăng ký
   registerBtn?.addEventListener("click", () => {
-    window.location.href = "/html/register.html";
+    window.location.href = "/register";
   });
 });

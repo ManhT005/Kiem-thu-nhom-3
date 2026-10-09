@@ -1,19 +1,14 @@
-const escapeHtml = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (character) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;",
-    };
-    return entities[character];
-  });
+const createTextElement = (tagName, className, text) => {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  element.textContent = String(text ?? "");
+  return element;
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -26,8 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================== [MỚI] KHÔI PHỤC TAB KHI F5 ==================
 
-  const savedTab = localStorage.getItem("currentProfileTab") || "info";
-  switchTab(savedTab);
+  const routeDefaultTab =
+    window.location.pathname === "/orders" ? "orders" : "info";
+  const savedTab = localStorage.getItem("currentProfileTab");
+  switchTab(routeDefaultTab === "orders" ? "orders" : savedTab || "info");
 });
 
 async function fetchProfile(token) {
@@ -52,10 +49,10 @@ async function fetchProfile(token) {
 // HÀM HIỂN THỊ DANH SÁCH ĐỊA CHỈ (ĐÃ CẬP NHẬT)
 function renderAddressList(addresses) {
   const listEl = document.getElementById("address-list");
-  listEl.innerHTML = "";
+  listEl.replaceChildren();
 
   if (!addresses || addresses.length === 0) {
-    listEl.innerHTML = "<li>Chưa có địa chỉ nào.</li>";
+    listEl.appendChild(createTextElement("li", "", "Chưa có địa chỉ nào."));
     return;
   }
 
@@ -65,25 +62,73 @@ function renderAddressList(addresses) {
       "display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;";
 
     // Kiểm tra xem có phải mặc định không (dựa vào cột macDinh trả về từ backend)
-    const isDefault = addr.macDinh === 1;
+    const addressId = Number(addr.maDiaChi);
+    const hasValidId = Number.isSafeInteger(addressId) && addressId > 0;
+    const isDefault = Number(addr.macDinh) === 1;
+    const addressDetails = document.createElement("div");
+    addressDetails.style.display = "flex";
+    addressDetails.style.alignItems = "center";
+    const marker = document.createElement("i");
+    marker.className = "fa-solid fa-map-marker-alt";
+    marker.style.color = "#ee4d2d";
+    marker.style.marginRight = "8px";
+    addressDetails.append(
+      marker,
+      createTextElement("span", "", addr.tenDiaChi),
+    );
 
-    // Tạo nút hoặc Badge hiển thị trạng thái
-    const statusHtml = isDefault
-      ? `<span style="color: #28a745; font-size: 12px; border: 1px solid #28a745; padding: 2px 6px; border-radius: 4px; margin-right: 10px; font-weight: bold;">Mặc định</span>`
-      : `<button onclick="setAddressDefault(${addr.maDiaChi})" style="font-size: 12px; color: #007bff; background: none; border: 1px solid #007bff; padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Đặt làm mặc định</button>`;
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.alignItems = "center";
+    if (isDefault) {
+      const badge = createTextElement("span", "", "Mặc định");
+      Object.assign(badge.style, {
+        color: "#28a745",
+        fontSize: "12px",
+        border: "1px solid #28a745",
+        padding: "2px 6px",
+        borderRadius: "4px",
+        marginRight: "10px",
+        fontWeight: "bold",
+      });
+      actions.appendChild(badge);
+    } else if (hasValidId) {
+      const setDefaultButton = createTextElement(
+        "button",
+        "",
+        "Đặt làm mặc định",
+      );
+      Object.assign(setDefaultButton.style, {
+        fontSize: "12px",
+        color: "#007bff",
+        background: "none",
+        border: "1px solid #007bff",
+        padding: "2px 6px",
+        borderRadius: "4px",
+        cursor: "pointer",
+        marginRight: "10px",
+      });
+      setDefaultButton.addEventListener("click", () =>
+        setAddressDefault(addressId),
+      );
+      actions.appendChild(setDefaultButton);
+    }
 
-    li.innerHTML = `
-            <div style="display: flex; align-items: center;">
-                <i class="fa-solid fa-map-marker-alt" style="color:#ee4d2d; margin-right:8px;"></i> 
-                <span>${addr.tenDiaChi}</span>
-            </div>
-            <div style="display: flex; align-items: center;">
-                ${statusHtml}
-                <button onclick="removeAddress(${addr.maDiaChi})" style="background:none; border:none; color: red; cursor: pointer; margin-left: 5px;" title="Xóa">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-        `;
+    if (hasValidId) {
+      const removeButton = createTextElement("button", "", "Xóa");
+      Object.assign(removeButton.style, {
+        background: "none",
+        border: "none",
+        color: "red",
+        cursor: "pointer",
+        marginLeft: "5px",
+      });
+      removeButton.title = "Xóa";
+      removeButton.addEventListener("click", () => removeAddress(addressId));
+      actions.appendChild(removeButton);
+    }
+
+    li.append(addressDetails, actions);
     listEl.appendChild(li);
   });
 }
@@ -207,7 +252,9 @@ async function removeAddress(id) {
 
 async function fetchOrders(token) {
   const orderListDiv = document.getElementById("order-list");
-  orderListDiv.innerHTML = "<p>Đang tải đơn hàng...</p>";
+  orderListDiv.replaceChildren(
+    createTextElement("p", "", "Đang tải đơn hàng..."),
+  );
 
   try {
     const response = await fetch("/api/orders/my-orders", {
@@ -223,74 +270,174 @@ async function fetchOrders(token) {
     const orders = responseData.data ?? responseData;
 
     if (orders.length > 0) {
-      orderListDiv.innerHTML = orders
-        .map((order) => {
-          const productsHtml = order.items
-            .map(
-              (item) => `
-                    <div style="display: flex; gap: 15px; padding: 10px 0; border-top: 1px solid #f0f0f0;">
-                        <img src="../Asset/${escapeHtml(item.anhSP)}" alt="${escapeHtml(item.tenSP)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
-                        <div style="flex: 1;">
-                          <div style="font-weight: 500; font-size: 14px;">${escapeHtml(item.tenSP)}</div>
-                            <div style="font-size: 13px; color: #777;">
-                            Phân loại: ${escapeHtml(item.tenSize || "N/A")} | x${item.soLuongMua}
-                            </div>
-                            <div style="font-size: 14px; color: #ee4d2d; margin-top: 2px;">
-                                ${Number(item.giaMua).toLocaleString("vi-VN")} đ
-                            </div>
-                        </div>
-                    </div>
-                `,
-            )
-            .join("");
+      const orderCards = orders.map((order) => {
+        const card = document.createElement("div");
+        card.className = "order-item";
+        Object.assign(card.style, {
+          background: "#fff",
+          padding: "15px",
+          marginBottom: "15px",
+          borderRadius: "8px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          border: "1px solid #eee",
+        });
 
-          // [MỚI] Kiểm tra nếu đơn hàng "Chờ xác nhận" thì hiện nút Hủy
-          let actionButton = "";
-          if (order.trangThai === "Chờ xác nhận") {
-            actionButton = `
-                        <button onclick="cancelOrder(${order.maDonHang})" 
-                                style="padding: 6px 12px; background: #fff; color: #555; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 13px; margin-left: 10px; transition: 0.2s;">
-                            Hủy đơn hàng
-                        </button>
-                    `;
-          }
+        const header = document.createElement("div");
+        header.className = "order-header";
+        Object.assign(header.style, {
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "10px",
+          paddingBottom: "5px",
+        });
+        const identity = document.createElement("div");
+        const orderId = Number(order.maDonHang);
+        identity.appendChild(
+          createTextElement(
+            "strong",
+            "",
+            `Đơn hàng #${Number.isSafeInteger(orderId) ? orderId : ""}`,
+          ),
+        );
+        const orderDate = createTextElement(
+          "span",
+          "",
+          new Date(order.ngayDat).toLocaleString("vi-VN"),
+        );
+        Object.assign(orderDate.style, {
+          fontSize: "12px",
+          color: "#888",
+        });
+        identity.append(document.createElement("br"), orderDate);
 
-          return `
-                <div class="order-item" style="background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #eee;">
-                    <div class="order-header" style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px;">
-                        <div>
-                            <strong>Đơn hàng #${order.maDonHang}</strong>
-                            <br><span style="font-size: 12px; color: #888;">${new Date(order.ngayDat).toLocaleString("vi-VN")}</span>
-                        </div>
-                        <span class="status-badge ${getStatusClass(order.trangThai)}">
-                            ${escapeHtml(order.trangThai)}
-                        </span>
-                    </div>
-                    
-                    <div class="order-body">
-                        ${productsHtml}
-                    </div>
+        const status = createTextElement("span", "status-badge", order.trangThai);
+        status.classList.add(getStatusClass(order.trangThai));
+        header.append(identity, status);
 
-                    <div class="order-footer" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; color: #555;">Người nhận: ${escapeHtml(order.tenNguoiNhan)} (${escapeHtml(order.sdt)})</span>
-                        <div style="display: flex; align-items: center;">
-                            <div class="order-total" style="font-size: 15px; font-weight: bold; color: #ee4d2d; margin-right: 10px;">
-                                Thành tiền: ${Number(order.tongTien).toLocaleString("vi-VN")} đ
-                            </div>
-                            ${actionButton}
-                        </div>
-                    </div>
-                </div>
-            `;
-        })
-        .join("");
+        const body = document.createElement("div");
+        body.className = "order-body";
+        (order.items || []).forEach((item) => {
+          const row = document.createElement("div");
+          Object.assign(row.style, {
+            display: "flex",
+            gap: "15px",
+            padding: "10px 0",
+            borderTop: "1px solid #f0f0f0",
+          });
+          const image = document.createElement("img");
+          image.src = window.safeAssetUrl(item.anhSP);
+          image.alt = String(item.tenSP ?? "");
+          Object.assign(image.style, {
+            width: "60px",
+            height: "60px",
+            objectFit: "cover",
+            borderRadius: "4px",
+            border: "1px solid #ddd",
+          });
+          const details = document.createElement("div");
+          details.style.flex = "1";
+          const name = createTextElement("div", "", item.tenSP);
+          Object.assign(name.style, { fontWeight: "500", fontSize: "14px" });
+          const variant = createTextElement(
+            "div",
+            "",
+            `Phân loại: ${item.tenSize || "N/A"} | x${Number(item.soLuongMua)}`,
+          );
+          Object.assign(variant.style, {
+            fontSize: "13px",
+            color: "#777",
+          });
+          const price = createTextElement(
+            "div",
+            "",
+            `${Number(item.giaMua).toLocaleString("vi-VN")} đ`,
+          );
+          Object.assign(price.style, {
+            fontSize: "14px",
+            color: "#ee4d2d",
+            marginTop: "2px",
+          });
+          details.append(name, variant, price);
+          row.append(image, details);
+          body.appendChild(row);
+        });
+
+        const footer = document.createElement("div");
+        Object.assign(footer.style, {
+          marginTop: "10px",
+          paddingTop: "10px",
+          borderTop: "1px dashed #ddd",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        });
+        const receiver = createTextElement(
+          "span",
+          "",
+          `Người nhận: ${order.tenNguoiNhan} (${order.sdt})`,
+        );
+        Object.assign(receiver.style, { fontSize: "13px", color: "#555" });
+        const actions = document.createElement("div");
+        Object.assign(actions.style, {
+          display: "flex",
+          alignItems: "center",
+        });
+        const total = createTextElement(
+          "div",
+          "order-total",
+          `Thành tiền: ${Number(order.tongTien).toLocaleString("vi-VN")} đ`,
+        );
+        Object.assign(total.style, {
+          fontSize: "15px",
+          fontWeight: "bold",
+          color: "#ee4d2d",
+          marginRight: "10px",
+        });
+        actions.appendChild(total);
+        if (
+          order.trangThai === "Chờ xác nhận" &&
+          Number.isSafeInteger(orderId) &&
+          orderId > 0
+        ) {
+          const cancelButton = createTextElement(
+            "button",
+            "",
+            "Hủy đơn hàng",
+          );
+          Object.assign(cancelButton.style, {
+            padding: "6px 12px",
+            background: "#fff",
+            color: "#555",
+            border: "1px solid #ddd",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "13px",
+            marginLeft: "10px",
+            transition: "0.2s",
+          });
+          cancelButton.addEventListener("click", () => cancelOrder(orderId));
+          actions.appendChild(cancelButton);
+        }
+        footer.append(receiver, actions);
+        card.append(header, body, footer);
+        return card;
+      });
+      orderListDiv.replaceChildren(...orderCards);
     } else {
-      orderListDiv.innerHTML =
-        "<p style='text-align:center'>Bạn chưa có đơn hàng nào.</p>";
+      orderListDiv.replaceChildren(
+        createTextElement("p", "", "Bạn chưa có đơn hàng nào."),
+      );
     }
   } catch (error) {
     console.error("Lỗi orders:", error);
-    orderListDiv.innerHTML = `<p style='color:red; text-align:center;'>Có lỗi xảy ra: ${escapeHtml(error.message)}</p>`;
+    const message = createTextElement(
+      "p",
+      "",
+      `Có lỗi xảy ra: ${error.message}`,
+    );
+    message.style.color = "red";
+    message.style.textAlign = "center";
+    orderListDiv.replaceChildren(message);
   }
 }
 
@@ -371,5 +518,5 @@ function getStatusClass(status) {
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  window.location.href = "login.html";
+  window.location.href = "/login";
 }

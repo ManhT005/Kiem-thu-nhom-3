@@ -32,23 +32,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody = document.querySelector("#categoryTable tbody");
     if (!tbody) return; // Tab chưa được hiển thị
 
-    tbody.innerHTML = "";
+    tbody.replaceChildren();
 
     if (categories.length === 0) {
-      tbody.innerHTML =
-        "<tr><td colspan='3' style='text-align:center'>Chưa có danh mục nào</td></tr>";
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 3;
+      cell.style.textAlign = "center";
+      cell.textContent = "Chưa có danh mục nào";
+      row.appendChild(cell);
+      tbody.appendChild(row);
       return;
     }
 
     categories.forEach((c) => {
+      const categoryId = Number(c.maDanhMuc);
+      if (!Number.isSafeInteger(categoryId) || categoryId < 1) return;
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${c.maDanhMuc}</td>
-        <td>${c.tenDanhMuc}</td>
-        <td>
-          <button class="action-btn edit-btn" data-id="${c.maDanhMuc}">Sửa</button>
-          <button class="action-btn delete-btn" data-id="${c.maDanhMuc}">Xóa</button>
-        </td>`;
+      const idCell = document.createElement("td");
+      idCell.textContent = String(categoryId);
+      const nameCell = document.createElement("td");
+      nameCell.textContent = String(c.tenDanhMuc ?? "");
+      const actionsCell = document.createElement("td");
+      for (const [className, label] of [
+        ["edit-btn", "Sửa"],
+        ["delete-btn", "Xóa"],
+      ]) {
+        const button = document.createElement("button");
+        button.className = `action-btn ${className}`;
+        button.dataset.id = String(categoryId);
+        button.textContent = label;
+        actionsCell.appendChild(button);
+      }
+      tr.append(idCell, nameCell, actionsCell);
       tbody.appendChild(tr);
     });
 

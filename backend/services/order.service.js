@@ -113,6 +113,8 @@ export const createOrder = async (
     }
 
     const status = ORDER_STATUS.PENDING;
+    const paymentStatus =
+      paymentMethod.tenPTTT === "MOMO" ? "PENDING" : "NOT_REQUIRED";
     const orderId = await repository.insertOrder(connection, {
       userId: input.userId,
       tenNguoiNhan: input.tenNguoiNhan,
@@ -122,6 +124,7 @@ export const createOrder = async (
       tongTien: total,
       maPTTT: paymentMethodId,
       trangThai: status,
+      paymentStatus,
     });
 
     for (const item of pricedItems) {
@@ -151,7 +154,12 @@ export const createOrder = async (
       reason: "ORDER_CREATED",
     });
 
-    return { maDonHang: orderId, tongTien: total, trangThai: status };
+    return {
+      maDonHang: orderId,
+      tongTien: total,
+      trangThai: status,
+      paymentStatus,
+    };
   });
 };
 
@@ -250,6 +258,9 @@ const transitionOrder = async (
       actorId,
       reason: reason || null,
     });
+    if (targetStatus === ORDER_STATUS.CANCELLED) {
+      await repository.cancelPendingPayment(connection, normalizedOrderId);
+    }
 
     return { maDonHang: normalizedOrderId, trangThai: targetStatus };
   });
@@ -272,6 +283,8 @@ const mapOrderRows = (rows) => {
         maDonHang: row.maDonHang,
         ngayDat: row.ngayDat,
         trangThai: row.trangThai,
+        paymentStatus: row.payment_status,
+        paymentExpiresAt: row.payment_expires_at,
         tongTien: row.tongTien,
         tenNguoiNhan: row.tenNguoiNhan,
         sdt: row.sdt,

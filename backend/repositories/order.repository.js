@@ -1,6 +1,7 @@
 const ORDER_ROWS_SELECT = `
   SELECT
-    d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.tenNguoiNhan,
+    d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.payment_status,
+    d.payment_expires_at, d.tenNguoiNhan,
     d.sdt, d.diaChiGiaoHang, d.ghiChu,
     c.maSP, c.maSize, c.soLuongMua, c.giaMua,
     s.tenSP, s.anhSP, sz.tenSize
@@ -50,7 +51,7 @@ const buildOrderFilters = (filters) => {
 export const orderRepository = {
   async findPaymentMethod(connection, paymentMethodId) {
     const [rows] = await connection.execute(
-      "SELECT maPTTT FROM phuongThucThanhToan WHERE maPTTT = ?",
+      "SELECT maPTTT, tenPTTT FROM phuongThucThanhToan WHERE maPTTT = ?",
       [paymentMethodId],
     );
     return rows[0] ?? null;
@@ -71,8 +72,10 @@ export const orderRepository = {
   async insertOrder(connection, order) {
     const [result] = await connection.execute(
       `INSERT INTO DonHang
-       (id, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT, trangThai)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT,
+        trangThai, payment_status, payment_expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+         CASE WHEN ? = 'PENDING' THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE) ELSE NULL END)`,
       [
         order.userId,
         order.tenNguoiNhan,
@@ -82,6 +85,8 @@ export const orderRepository = {
         order.tongTien,
         order.maPTTT,
         order.trangThai,
+        order.paymentStatus,
+        order.paymentStatus,
       ],
     );
     return result.insertId;
@@ -172,6 +177,21 @@ export const orderRepository = {
       [status, orderId],
     );
     return result.affectedRows;
+  },
+
+  async cancelPendingPayment(connection, orderId) {
+    await connection.execute(
+      `UPDATE MomoPaymentTransaction
+       SET status = 'EXPIRED'
+       WHERE maDonHang = ? AND status = 'PENDING'`,
+      [orderId],
+    );
+    await connection.execute(
+      `UPDATE DonHang
+       SET payment_status = 'CANCELLED'
+       WHERE maDonHang = ? AND payment_status = 'PENDING'`,
+      [orderId],
+    );
   },
 
   async getMyOrderRows(executor, userId) {
