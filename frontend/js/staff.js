@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1. Kiểm tra đăng nhập
   if (!token) {
     alert("Bạn chưa đăng nhập!");
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      window.location.href = "/html/index.html";
+      window.location.href = "/";
     });
   }
 
@@ -92,8 +92,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       data.products.forEach((sp) => {
         const imgSrc = sp.anhSP
-          ? `../Asset/${sp.anhSP}`
-          : "../Asset/no-image.jpg";
+          ? `/Asset/${sp.anhSP}`
+          : "/Asset/no-image.jpg";
 
         let sizeSummary =
           '<span style="color:#999; font-style:italic;">Chưa có size</span>';

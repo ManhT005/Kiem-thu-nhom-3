@@ -4,13 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!token || !currentUser) {
     alert("Bạn chưa đăng nhập!");
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
     return;
   }
 
   if (currentUser.role !== "admin") {
     alert("Bạn không có quyền truy cập trang này!");
-    window.location.href = "/html/index.html";
+    window.location.href = "/";
     return;
   }
 
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    window.location.href = "/html/index.html";
+    window.location.href = "/";
   });
 
   // ------------------- FETCH API (có token) -------------------
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (res.status === 401 || res.status === 403) {
         alert("Phiên đăng nhập hết hạn hoặc không có quyền!");
         localStorage.clear();
-        window.location.href = "/html/login.html";
+        window.location.href = "/login";
         return null;
       }
 

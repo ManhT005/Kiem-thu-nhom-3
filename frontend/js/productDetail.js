@@ -1,7 +1,7 @@
 // frontend/js/productDetail.js
 document.addEventListener("DOMContentLoaded", async () => {
-  const params = new URLSearchParams(window.location.search);
-  const productId = params.get("id");
+  const productMatch = window.location.pathname.match(/^\/products\/(\d+)$/);
+  const productId = productMatch?.[1];
   let selectedSizeId = null;
   let currentStock = 0;
 
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!productId) {
     alert("Không tìm thấy ID sản phẩm");
-    window.location.href = "/html/index.html";
+    window.location.href = "/";
     return;
   }
 
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!user || !token) {
         alert("Bạn cần đăng nhập để mua hàng!");
-        window.location.href = "/html/login.html";
+        window.location.href = "/login";
         return;
       }
 
@@ -192,7 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       user = JSON.parse(localStorage.getItem("user"));
       if (!user) {
         alert("Bạn cần đăng nhập để mua hàng!");
-        window.location.href = "/html/login.html";
+        window.location.href = "/login";
         return;
       }
 
@@ -232,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("checkoutItems", JSON.stringify([buyNowItem]));
 
       // 4. Chuyển hướng
-      window.location.href = "/html/checkout.html";
+      window.location.href = "/checkout";
     });
   }
 });

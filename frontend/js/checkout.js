@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!token || checkoutItems.length === 0) {
     alert("Không có thông tin đơn hàng!");
-    window.location.href = "/html/cart.html";
+    window.location.href = "/cart";
     return;
   }
 
@@ -137,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (maPTTT === "3") {
         try {
           // Gọi API backend để lấy link thanh toán MoMo
-          const res = await fetch("/api/create-payment-momo", {
+          const res = await fetch("/api/payments/momo/create", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ amount: totalAmount }), // Gửi tổng tiền lên
@@ -190,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (res.ok) {
           alert("Đặt hàng thành công!");
           localStorage.removeItem("checkoutItems");
-          window.location.href = "/html/index.html";
+          window.location.href = "/";
         } else {
           alert(data.message || "Có lỗi xảy ra");
         }

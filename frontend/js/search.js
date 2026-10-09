@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function goToSearch() {
     const kw = searchInput.value.trim();
     if (!kw) return;
-    window.location.href = `/pages/search.html?keyword=${encodeURIComponent(
+    window.location.href = `/search?keyword=${encodeURIComponent(
       kw,
     )}`;
   }
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <p>${Number(p.gia).toLocaleString()} VND</p>
       `;
       div.addEventListener("click", () => {
-        window.location.href = `/html/productDetail.html?id=${p.maSP}`;
+        window.location.href = `/products/${p.maSP}`;
       });
       searchResults.appendChild(div);
     });

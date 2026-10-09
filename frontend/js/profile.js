@@ -13,7 +13,7 @@ const escapeHtml = (value) =>
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -26,8 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================== [MỚI] KHÔI PHỤC TAB KHI F5 ==================
 
-  const savedTab = localStorage.getItem("currentProfileTab") || "info";
-  switchTab(savedTab);
+  const routeDefaultTab =
+    window.location.pathname === "/orders" ? "orders" : "info";
+  const savedTab = localStorage.getItem("currentProfileTab");
+  switchTab(routeDefaultTab === "orders" ? "orders" : savedTab || "info");
 });
 
 async function fetchProfile(token) {
@@ -229,7 +231,7 @@ async function fetchOrders(token) {
             .map(
               (item) => `
                     <div style="display: flex; gap: 15px; padding: 10px 0; border-top: 1px solid #f0f0f0;">
-                        <img src="../Asset/${escapeHtml(item.anhSP)}" alt="${escapeHtml(item.tenSP)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                        <img src="/Asset/${escapeHtml(item.anhSP)}" alt="${escapeHtml(item.tenSP)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
                         <div style="flex: 1;">
                           <div style="font-weight: 500; font-size: 14px;">${escapeHtml(item.tenSP)}</div>
                             <div style="font-size: 13px; color: #777;">
@@ -371,5 +373,5 @@ function getStatusClass(status) {
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  window.location.href = "login.html";
+  window.location.href = "/login";
 }

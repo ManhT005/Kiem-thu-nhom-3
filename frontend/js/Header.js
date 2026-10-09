@@ -9,24 +9,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const navHTML = `
       <nav class="navbar">
         <ul class="nav-links">
-          <li><a href="/html/index.html">Trang chủ</a></li>
+          <li><a href="/">Trang chủ</a></li>
           
           <li class="nav-item-dropdown">
-            <a href="/html/search.html?keyword=Áo">Áo ▾</a>
+            <a href="/search?keyword=Áo">Áo ▾</a>
             <ul class="dropdown-content">
-              <li><a href="/html/search.html?keyword=Áo sơ mi">Áo sơ mi</a></li>
-              <li><a href="/html/search.html?keyword=Áo phông">Áo phông</a></li>
-              <li><a href="/html/search.html?keyword=Áo thun">Áo thun</a></li>
-              <li><a href="/html/search.html?keyword=Áo khoác">Áo khoác</a></li>
+              <li><a href="/search?keyword=Áo sơ mi">Áo sơ mi</a></li>
+              <li><a href="/search?keyword=Áo phông">Áo phông</a></li>
+              <li><a href="/search?keyword=Áo thun">Áo thun</a></li>
+              <li><a href="/search?keyword=Áo khoác">Áo khoác</a></li>
             </ul>
           </li>
 
           <li class="nav-item-dropdown">
-            <a href="/html/search.html?keyword=Quần">Quần ▾</a>
+            <a href="/search?keyword=Quần">Quần ▾</a>
             <ul class="dropdown-content">
-              <li><a href="/html/search.html?keyword=Quần ngố bò">Quần ngố bò</a></li>
-              <li><a href="/html/search.html?keyword=Quần jean">Quần jean</a></li>
-              <li><a href="/html/search.html?keyword=Quần âu">Quần âu</a></li>
+              <li><a href="/search?keyword=Quần ngố bò">Quần ngố bò</a></li>
+              <li><a href="/search?keyword=Quần jean">Quần jean</a></li>
+              <li><a href="/search?keyword=Quần âu">Quần âu</a></li>
             </ul>
           </li>
 
@@ -61,11 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Nút Đăng nhập / Đăng ký ---
   loginBtn?.addEventListener("click", () => {
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
   });
 
   registerBtn?.addEventListener("click", () => {
-    window.location.href = "/html/register.html";
+    window.location.href = "/register";
   });
 
   // --- Update Header ---
@@ -95,9 +95,9 @@ document.addEventListener("DOMContentLoaded", () => {
   userMenu?.addEventListener("click", (e) => {
     const token = localStorage.getItem("token");
     if (token) {
-      window.location.href = "/html/profile.html";
+      window.location.href = "/profile";
     } else {
-      window.location.href = "/html/login.html";
+      window.location.href = "/login";
     }
     e.stopPropagation();
   });
@@ -108,24 +108,24 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("token");
     localStorage.removeItem("cart");
     alert("Đã đăng xuất!");
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
   });
 
   // --- Logo click ---
   logo?.addEventListener("click", () => {
-    window.location.href = "/html/index.html";
+    window.location.href = "/";
   });
 
   // --- Cart click ---
   cartBtn?.addEventListener("click", () => {
-    window.location.href = "/html/cart.html";
+    window.location.href = "/cart";
   });
 
   // --- Search ---
   function goToSearch() {
     const keyword = searchInput.value.trim();
     if (!keyword) return;
-    window.location.href = `/html/search.html?keyword=${encodeURIComponent(keyword)}`;
+    window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
   }
   searchBtn?.addEventListener("click", goToSearch);
   searchInput?.addEventListener("keydown", (e) => {

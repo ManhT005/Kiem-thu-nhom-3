@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!user || !token) {
     alert("Bạn chưa đăng nhập!");
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       localStorage.setItem("checkoutItems", JSON.stringify(selectedItems));
-      window.location.href = "/html/checkout.html";
+      window.location.href = "/checkout";
     });
   }
 

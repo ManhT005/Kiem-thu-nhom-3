@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import path from "path";
+import { fileURLToPath } from "node:url";
 import authRoutes from "./routes/auth.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import userRoutes from "./routes/user.routes.js";
@@ -9,13 +10,14 @@ import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import cors from "cors";
-import axios from "axios"; //phần momo
-import crypto from "crypto"; // phần momo
 import { CORS_ORIGIN } from "./config/config.js";
 import { success } from "./utils/api-response.js";
 import { notFound } from "./middleware/not-found.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { responseContract } from "./middleware/response-contract.middleware.js";
+import { createPageRouter } from "./routes/page.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import { createMomoPayment } from "./controllers/payment.controller.js";
 const app = express();
 
 app.use(
@@ -28,7 +30,9 @@ app.use(
 app.use(express.json());
 app.use(responseContract);
 
-const __dirname = path.resolve();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendRoot = path.resolve(__dirname, "../frontend");
 
 // ------------------ API ROUTES -----------------
 app.get("/api/health", (_req, res) => success(res, { data: { status: "UP" } }));
@@ -39,89 +43,22 @@ app.use("/api/kho", khoRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/payments", paymentRoutes);
+app.post("/api/create-payment-momo", createMomoPayment);
+app.use("/api", notFound);
+
 // ------------------ STATIC FRONTEND ------------------
-app.use("/Asset", express.static(path.join(__dirname, "../frontend/Asset")));
-app.use(express.static(path.join(__dirname, "../frontend")));
-
-app.get("/", (req, res) =>
-  res.sendFile(path.join(__dirname, "../frontend/html/index.html")),
-);
-
-app.get("/login", (req, res) =>
-  res.sendFile(path.join(__dirname, "../frontend/html/login.html")),
-);
-
-app.get("/register", (req, res) =>
-  res.sendFile(path.join(__dirname, "../frontend/html/register.html")),
-);
+app.use("/css", express.static(path.join(frontendRoot, "css")));
+app.use("/js", express.static(path.join(frontendRoot, "js")));
+app.use("/Asset", express.static(path.join(frontendRoot, "Asset")));
 
 // Serve uploads
-app.use("/uploads", express.static(path.join(__dirname, "../frontend/Asset")));
+app.use("/uploads", express.static(path.join(frontendRoot, "Asset")));
 
-// --- CẤU HÌNH MOMO SANDBOX (DÙNG CHUNG CHO TEST) ---
-const config = {
-  accessKey: "F8BBA842ECF85", // Key test công khai của MoMo
-  secretKey: "K951B6PE1waDMi640xX08PD3vg6EkVlz", // Key test công khai
-  partnerCode: "MOMO",
-  redirectUrl: "http://127.0.0.1:5500/html/orderSuccess.html", // Quay về trang thông báo thành công
-  ipnUrl: "http://127.0.0.1:5500/html/orderSuccess.html", // (Lưu ý: Localhost không nhận được IPN thật, đây chỉ là demo)
-  requestType: "payWithATM",
-  extraData: "",
-  orderInfo: "Thanh toán đơn hàng quần áo",
-  autoCapture: true,
-  lang: "vi",
-};
-
-// API TẠO LINK THANH TOÁN MOMO
-app.post("/api/create-payment-momo", async (req, res, next) => {
-  const { amount } = req.body; // Lấy tổng tiền từ Frontend gửi lên
-
-  // Tạo mã đơn hàng ngẫu nhiên để không bị trùng
-  const orderId = "MOMO" + new Date().getTime();
-  const requestId = orderId;
-
-  // Tạo chữ ký bảo mật (Signature) theo yêu cầu của MoMo
-  const rawSignature = `accessKey=${config.accessKey}&amount=${amount}&extraData=${config.extraData}&ipnUrl=${config.ipnUrl}&orderId=${orderId}&orderInfo=${config.orderInfo}&partnerCode=${config.partnerCode}&redirectUrl=${config.redirectUrl}&requestId=${requestId}&requestType=${config.requestType}`;
-
-  const signature = crypto
-    .createHmac("sha256", config.secretKey)
-    .update(rawSignature)
-    .digest("hex");
-
-  // Tạo body gửi sang MoMo
-  const requestBody = {
-    partnerCode: config.partnerCode,
-    partnerName: "Test MoMo",
-    storeId: "MomoTestStore",
-    requestId: requestId,
-    amount: amount,
-    orderId: orderId,
-    orderInfo: config.orderInfo,
-    redirectUrl: config.redirectUrl,
-    ipnUrl: config.ipnUrl,
-    lang: config.lang,
-    requestType: config.requestType,
-    autoCapture: config.autoCapture,
-    extraData: config.extraData,
-    signature: signature,
-  };
-
-  try {
-    // Gọi API của MoMo
-    const response = await axios.post(
-      "https://test-payment.momo.vn/v2/gateway/api/create",
-      requestBody,
-    );
-
-    // Trả về link thanh toán (payUrl) cho Frontend
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error("Lỗi thanh toán MoMo:", error);
-    next(error);
-  }
-});
-
-app.use("/api", notFound);
+app.use(createPageRouter(frontendRoot));
+app.use((req, res) =>
+  res.status(404).sendFile(path.join(frontendRoot, "html", "404.html")),
+);
 app.use(errorHandler);
 
 export default app;

@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // CLICK → TRANG CHI TIẾT
       div.addEventListener("click", () => {
-        window.location.href = `/html/productDetail.html?id=${p.maSP}`;
+        window.location.href = `/products/${p.maSP}`;
       });
 
       productList.appendChild(div);
