@@ -1,0 +1,58 @@
+name: Phase 2 Order Integrity
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  order-integrity:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: clothes_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: clothes_test
+      ORDER_CONCURRENCY_TEST: "1"
+      JWT_SECRET: phase-2-ci-only-secret
+      CORS_ORIGIN: http://localhost:3000
+      PORT: 3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - run: npm ci
+      - run: npm --prefix backend ci
+      - run: npm run db:reset
+      - run: npm run db:seed:phase2
+      - run: npm run test:backend
+      - run: npm run test:integration
+      - name: Start API
+        run: |
+          npm --prefix backend start > server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:3000/api/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://localhost:3000/api/health > /dev/null
+      - run: npm run test:api

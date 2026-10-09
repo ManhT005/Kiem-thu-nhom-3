@@ -95,11 +95,20 @@ body {
 .status-pending {
   background-color: #f0ad4e;
 }
+.status-confirmed {
+  background-color: #0275d8;
+}
+.status-shipping {
+  background-color: #17a2b8;
+}
 .status-completed {
   background-color: #5cb85c;
 }
 .status-cancelled {
   background-color: #d9534f;
+}
+.status-unknown {
+  background-color: #6c757d;
 }
 
 .order-total {
