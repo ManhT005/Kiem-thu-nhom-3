@@ -1,3 +1,15 @@
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return entities[character];
+  });
+
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -207,7 +219,8 @@ async function fetchOrders(token) {
       throw new Error(errData.message || response.statusText);
     }
 
-    const orders = await response.json();
+    const responseData = await response.json();
+    const orders = responseData.data ?? responseData;
 
     if (orders.length > 0) {
       orderListDiv.innerHTML = orders
@@ -216,11 +229,11 @@ async function fetchOrders(token) {
             .map(
               (item) => `
                     <div style="display: flex; gap: 15px; padding: 10px 0; border-top: 1px solid #f0f0f0;">
-                        <img src="../Asset/${item.anhSP}" alt="${item.tenSP}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                        <img src="../Asset/${escapeHtml(item.anhSP)}" alt="${escapeHtml(item.tenSP)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
                         <div style="flex: 1;">
-                            <div style="font-weight: 500; font-size: 14px;">${item.tenSP}</div>
+                          <div style="font-weight: 500; font-size: 14px;">${escapeHtml(item.tenSP)}</div>
                             <div style="font-size: 13px; color: #777;">
-                                Phân loại: ${item.tenSize || "N/A"} | x${item.soLuongMua}
+                            Phân loại: ${escapeHtml(item.tenSize || "N/A")} | x${item.soLuongMua}
                             </div>
                             <div style="font-size: 14px; color: #ee4d2d; margin-top: 2px;">
                                 ${Number(item.giaMua).toLocaleString("vi-VN")} đ
@@ -249,9 +262,8 @@ async function fetchOrders(token) {
                             <strong>Đơn hàng #${order.maDonHang}</strong>
                             <br><span style="font-size: 12px; color: #888;">${new Date(order.ngayDat).toLocaleString("vi-VN")}</span>
                         </div>
-                        <span class="status-badge" 
-                              style="padding: 4px 8px; border-radius: 4px; font-size: 12px; height: fit-content; background: #e0f2f1; color: #00695c;">
-                            ${order.trangThai}
+                        <span class="status-badge ${getStatusClass(order.trangThai)}">
+                            ${escapeHtml(order.trangThai)}
                         </span>
                     </div>
                     
@@ -260,7 +272,7 @@ async function fetchOrders(token) {
                     </div>
 
                     <div class="order-footer" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; color: #555;">Người nhận: ${order.tenNguoiNhan} (${order.sdt})</span>
+                        <span style="font-size: 13px; color: #555;">Người nhận: ${escapeHtml(order.tenNguoiNhan)} (${escapeHtml(order.sdt)})</span>
                         <div style="display: flex; align-items: center;">
                             <div class="order-total" style="font-size: 15px; font-weight: bold; color: #ee4d2d; margin-right: 10px;">
                                 Thành tiền: ${Number(order.tongTien).toLocaleString("vi-VN")} đ
@@ -278,7 +290,7 @@ async function fetchOrders(token) {
     }
   } catch (error) {
     console.error("Lỗi orders:", error);
-    orderListDiv.innerHTML = `<p style='color:red; text-align:center;'>Có lỗi xảy ra: ${error.message}</p>`;
+    orderListDiv.innerHTML = `<p style='color:red; text-align:center;'>Có lỗi xảy ra: ${escapeHtml(error.message)}</p>`;
   }
 }
 
@@ -316,13 +328,13 @@ async function cancelOrder(orderId) {
   if (!token) return alert("Vui lòng đăng nhập lại!");
 
   try {
-    const res = await fetch(`/api/orders/${orderId}/status`, {
+    const res = await fetch(`/api/orders/${orderId}/cancel`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ trangThai: "Đã hủy" }),
+      body: JSON.stringify({}),
     });
 
     const data = await res.json();
@@ -340,9 +352,20 @@ async function cancelOrder(orderId) {
   }
 }
 function getStatusClass(status) {
-  if (status === "Đã giao" || status === "completed") return "status-completed";
-  if (status === "Đã hủy" || status === "cancelled") return "status-cancelled";
-  return "status-pending";
+  switch (status) {
+    case "Chờ xác nhận":
+      return "status-pending";
+    case "Đã xác nhận":
+      return "status-confirmed";
+    case "Đang giao":
+      return "status-shipping";
+    case "Hoàn thành":
+      return "status-completed";
+    case "Đã hủy":
+      return "status-cancelled";
+    default:
+      return "status-unknown";
+  }
 }
 
 function logout() {
