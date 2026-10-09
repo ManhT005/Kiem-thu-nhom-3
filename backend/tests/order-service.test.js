@@ -71,6 +71,7 @@ const makeLifecycleRepository = ({
     async insertHistory(_connection, entry) {
       state.history.push(entry);
     },
+    async cancelPendingPayment() {},
   };
   return { repository, state };
 };
@@ -110,6 +111,30 @@ test("prices order items from locked products and ignores client totals", async 
     calls.some(([name]) => name === "history"),
     true,
   );
+  assert.equal(result.paymentStatus, "NOT_REQUIRED");
+});
+
+test("creates MoMo orders as pending payments with server-priced totals", async () => {
+  const { calls, repository } = makeRepository();
+  repository.findPaymentMethod = async (_connection, paymentMethodId) => ({
+    maPTTT: paymentMethodId,
+    tenPTTT: "MOMO",
+  });
+
+  const result = await createOrder(
+    {
+      userId: 3,
+      maPTTT: 3,
+      tongTien: 1,
+      items: [{ maSP: 1, maSize: 1, soLuongMua: 1 }],
+    },
+    { transaction, repository },
+  );
+
+  const savedOrder = calls.find(([name]) => name === "insertOrder")[1];
+  assert.equal(savedOrder.tongTien, 125);
+  assert.equal(savedOrder.paymentStatus, "PENDING");
+  assert.equal(result.paymentStatus, "PENDING");
 });
 
 test("rejects duplicate variants before opening a transaction", async () => {

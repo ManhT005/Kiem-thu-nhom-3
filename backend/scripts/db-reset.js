@@ -45,11 +45,21 @@ try {
     fileFromRepository("database", "migrations", "002_order_integrity.sql"),
     "utf8",
   );
+  const paymentMigration = await fs.readFile(
+    fileFromRepository(
+      "database",
+      "migrations",
+      "003_momo_payment_transactions.sql",
+    ),
+    "utf8",
+  );
   const seed = await fs.readFile(
     fileFromRepository("database", "seeds", "001_reference_data.sql"),
     "utf8",
   );
-  await connection.query(`${migration}\n${orderMigration}\n${seed}`);
+  await connection.query(
+    `${migration}\n${orderMigration}\n${paymentMigration}\n${seed}`,
+  );
   console.log(`Database ${databaseName} reset successfully.`);
 } finally {
   await connection.end();

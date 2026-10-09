@@ -17,7 +17,7 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import { responseContract } from "./middleware/response-contract.middleware.js";
 import { createPageRouter } from "./routes/page.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
-import { createMomoPayment } from "./controllers/payment.controller.js";
+import { expirePendingMomoPayments } from "./services/payment.service.js";
 const app = express();
 
 app.use(
@@ -44,7 +44,6 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
-app.post("/api/create-payment-momo", createMomoPayment);
 app.use("/api", notFound);
 
 // ------------------ STATIC FRONTEND ------------------
@@ -66,6 +65,12 @@ export default app;
 // ------------------ START SERVER ------------------
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 3000;
+  const expirePayments = () =>
+    expirePendingMomoPayments().catch((error) =>
+      console.error("MoMo payment expiration failed:", error),
+    );
+  expirePayments();
+  setInterval(expirePayments, 30_000).unref();
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Frontend: http://localhost:${PORT}`);

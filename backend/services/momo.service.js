@@ -1,7 +1,7 @@
 import axios from "axios";
 import crypto from "node:crypto";
 
-const partnerCode = "MOMO";
+const partnerCode = process.env.MOMO_PARTNER_CODE || "MOMO";
 const requestType = "payWithATM";
 const extraData = "";
 const orderInfo = "Thanh toán đơn hàng quần áo";
@@ -30,7 +30,7 @@ const getMomoCredentials = () => {
   return { accessKey, secretKey };
 };
 
-const getPaymentUrls = () => {
+const getPaymentUrls = (redirectQuery) => {
   const appBaseUrl = process.env.APP_BASE_URL?.replace(/\/+$/, "");
   const publicApiUrl = (process.env.PUBLIC_API_URL || appBaseUrl)?.replace(
     /\/+$/,
@@ -41,18 +41,36 @@ const getPaymentUrls = () => {
       "APP_BASE_URL and PUBLIC_API_URL are required for MoMo payments",
     );
   }
+  if (
+    process.env.NODE_ENV === "production" &&
+    (new URL(appBaseUrl).protocol !== "https:" ||
+      new URL(publicApiUrl).protocol !== "https:")
+  ) {
+    throw new Error("MoMo redirect and IPN URLs must use HTTPS in production");
+  }
 
   return {
-    redirectUrl: `${appBaseUrl}/order-success`,
+    redirectUrl: `${appBaseUrl}/order-success${
+      redirectQuery ? `?${redirectQuery}` : ""
+    }`,
     ipnUrl: `${publicApiUrl}/api/payments/momo/ipn`,
   };
 };
 
-export const createMomoPaymentLink = async (amount) => {
+export const createMomoPaymentLink = async ({
+  amount,
+  orderId,
+  requestId,
+  redirectQuery,
+}) => {
   const { accessKey, secretKey } = getMomoCredentials();
-  const { redirectUrl, ipnUrl } = getPaymentUrls();
-  const orderId = `MOMO${Date.now()}`;
-  const requestId = orderId;
+  if (!Number.isSafeInteger(amount) || amount < 1000 || amount > 50_000_000) {
+    throw new Error("MoMo amount must be an integer from 1000 to 50000000 VND");
+  }
+  if (!orderId || !requestId) {
+    throw new Error("MoMo orderId and requestId are required");
+  }
+  const { redirectUrl, ipnUrl } = getPaymentUrls(redirectQuery);
   const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
   const signature = crypto
     .createHmac("sha256", secretKey)
@@ -95,7 +113,7 @@ export const buildMomoIpnSignatureString = (payload, accessKey) => {
 
 export const verifyMomoIpnSignature = (
   payload,
-  credentials = getMomoCredentials(),
+  credentials,
 ) => {
   if (
     !payload ||
@@ -105,12 +123,13 @@ export const verifyMomoIpnSignature = (
     return false;
   }
 
+  const configuredCredentials = credentials ?? getMomoCredentials();
   const rawSignature = buildMomoIpnSignatureString(
     payload,
-    credentials.accessKey,
+    configuredCredentials.accessKey,
   );
   const expected = crypto
-    .createHmac("sha256", credentials.secretKey)
+    .createHmac("sha256", configuredCredentials.secretKey)
     .update(rawSignature)
     .digest();
   const received = Buffer.from(payload.signature, "hex");

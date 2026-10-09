@@ -130,29 +130,62 @@ document.addEventListener("DOMContentLoaded", () => {
       // Validate dữ liệu trước
       if (!validateForm(tenNguoiNhan, sdt, diaChiGiaoHang)) return;
 
+      const payload = {
+        tenNguoiNhan,
+        sdt,
+        diaChiGiaoHang,
+        maPTTT,
+        ghiChu,
+        tongTien: totalAmount,
+        items: checkoutItems,
+      };
+
       // -------------------------------------------------------------
       // A. NẾU CHỌN MOMO (Giả sử ID của MoMo trong DB là "3")
       // Bạn cần kiểm tra trong Database xem ID của MoMo là số mấy nhé!
       // -------------------------------------------------------------
       if (maPTTT === "3") {
         try {
-          // Gọi API backend để lấy link thanh toán MoMo
+          let orderId = localStorage.getItem("pendingMomoOrderId");
+          if (!orderId) {
+            const orderResponse = await fetch("/api/orders/create", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(payload),
+            });
+            const orderData = await orderResponse.json();
+            if (!orderResponse.ok || !orderData.data?.maDonHang) {
+              alert(orderData.message || "Không thể tạo đơn hàng");
+              return;
+            }
+            orderId = String(orderData.data.maDonHang);
+            localStorage.setItem("pendingMomoOrderId", orderId);
+          }
+
           const res = await fetch("/api/payments/momo/create", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount: totalAmount }), // Gửi tổng tiền lên
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ orderId }),
           });
 
           const data = await res.json();
 
-          if (data && data.payUrl) {
-            // Lưu tạm thông tin đơn hàng vào localStorage để khi quay lại có thể lưu vào DB sau
-            // (Hoặc bạn có thể lưu đơn hàng trạng thái 'Pending' trước khi chuyển hướng)
+          if (res.ok && data.data?.payUrl) {
             alert("Đang chuyển hướng sang MoMo...");
-            window.location.href = data.payUrl; // CHUYỂN HƯỚNG SANG TRANG THANH TOÁN
+            window.location.href = data.data.payUrl;
           } else {
+            if (data.code === "PAYMENT_EXPIRED" || data.code === "ORDER_CANCELLED") {
+              localStorage.removeItem("pendingMomoOrderId");
+            }
             alert(
-              "Lỗi tạo giao dịch MoMo: " + (data.message || "Không xác định"),
+              "Lỗi tạo giao dịch MoMo: " +
+                (data.message || "Không xác định"),
             );
           }
         } catch (err) {
@@ -165,16 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // -------------------------------------------------------------
       // B. NẾU CHỌN COD HOẶC CHUYỂN KHOẢN (Logic cũ của bạn)
       // -------------------------------------------------------------
-      const payload = {
-        tenNguoiNhan,
-        sdt,
-        diaChiGiaoHang,
-        maPTTT,
-        ghiChu,
-        tongTien: totalAmount,
-        items: checkoutItems,
-      };
-
+      localStorage.removeItem("pendingMomoOrderId");
       try {
         const res = await fetch("/api/orders/create", {
           method: "POST",

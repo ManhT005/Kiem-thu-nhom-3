@@ -1,7 +1,9 @@
 import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
+import jwt from "jsonwebtoken";
 import app from "../server.js";
+import { SECRET_KEY } from "../config/config.js";
 
 let server;
 let baseUrl;
@@ -75,4 +77,24 @@ test("MoMo IPN endpoint rejects invalid signatures and acknowledges valid callba
     body: JSON.stringify({ signature: "invalid" }),
   });
   assert.equal(invalidResponse.status, 400);
+});
+
+test("MoMo payment creation requires authentication and an order id", async () => {
+  const unauthenticated = await fetch(`${baseUrl}/api/payments/momo/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount: 1 }),
+  });
+  assert.equal(unauthenticated.status, 401);
+
+  const token = jwt.sign({ id: 7, role: "user" }, SECRET_KEY);
+  const clientAmountOnly = await fetch(`${baseUrl}/api/payments/momo/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ amount: 1 }),
+  });
+  assert.equal(clientAmountOnly.status, 400);
 });
