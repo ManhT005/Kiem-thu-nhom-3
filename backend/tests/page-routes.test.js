@@ -41,6 +41,21 @@ test("canonical page routes serve their page shells", async () => {
   }
 });
 
+test("order success actions navigate to canonical page routes", async () => {
+  const response = await fetch(`${baseUrl}/order-success`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /href="\/" class="btn btn-success"/);
+  assert.match(html, /href="\/checkout" class="btn btn-fail"/);
+  assert.match(html, /href="\/" class="btn btn-home"/);
+
+  for (const route of ["/", "/checkout"]) {
+    const targetResponse = await fetch(`${baseUrl}${route}`);
+    assert.equal(targetResponse.status, 200, route);
+  }
+});
+
 test("legacy page URLs redirect and private HTML is not served directly", async () => {
   for (const [route, target] of [
     ["/html/login.html", "/login"],
