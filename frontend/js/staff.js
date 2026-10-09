@@ -76,9 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("searchInput");
     const search = searchInput ? searchInput.value : "";
     try {
-      const res = await fetch(`/api/kho?search=${search}`, {
+      const res = await fetch(
+        `/api/kho?search=${encodeURIComponent(search)}`,
+        {
         headers: { Authorization: `Bearer ${token}` },
-      });
+        },
+      );
       const data = await res.json();
 
       const tbody = document.querySelector("#khoTable tbody");
@@ -91,9 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       data.products.forEach((sp) => {
-        const imgSrc = sp.anhSP
-          ? `/Asset/${sp.anhSP}`
-          : "/Asset/no-image.jpg";
+        const imgSrc = window.safeAssetUrl(sp.anhSP);
 
         let sizeSummary =
           '<span style="color:#999; font-style:italic;">Chưa có size</span>';
@@ -101,17 +102,19 @@ document.addEventListener("DOMContentLoaded", () => {
           sizeSummary = sp.sizes
             .map(
               (s) =>
-                `<span class="size-badge">${escapeHtml(s.tenSize)}: <b>${s.soLuongTon}</b></span>`,
+                `<span class="size-badge">${escapeHtml(s.tenSize)}: <b>${Number(s.soLuongTon) || 0}</b></span>`,
             )
             .join(" ");
         }
 
+        const productId = Number(sp.maSP);
+        if (!Number.isSafeInteger(productId) || productId < 1) return;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-                    <td>${sp.maSP}</td>
+                    <td>${productId}</td>
                     <td><img src="${imgSrc}" width="50" style="object-fit:cover; border-radius:4px;"></td>
-                    <td>${sp.tenSP}</td>
-                    <td style="font-weight:bold; color: #2ecc71;">${sp.tongTonKho}</td>
+                    <td>${escapeHtml(sp.tenSP)}</td>
+                    <td style="font-weight:bold; color: #2ecc71;">${Number(sp.tongTonKho)}</td>
                     <td>${sizeSummary}</td>
                     <td><button class="edit-btn" style="cursor:pointer; padding:5px 10px;">Sửa kho</button></td>
                 `;
@@ -135,14 +138,23 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalTitle").innerText =
           `Cập nhật: ${sp.tenSP}`;
 
-        container.innerHTML = "";
+        container.replaceChildren();
         if (sp.sizes) {
           sp.sizes.forEach((s) => {
-            container.innerHTML += `
-                            <div class="input-group-row">
-                                <label>Size ${s.tenSize}</label>
-                                <input type="number" class="qty-input" data-size-id="${s.maSize}" value="${s.soLuongTon}" min="0">
-                            </div>`;
+            const sizeId = Number(s.maSize);
+            if (!Number.isSafeInteger(sizeId) || sizeId < 1) return;
+            const row = document.createElement("div");
+            row.className = "input-group-row";
+            const label = document.createElement("label");
+            label.textContent = `Size ${String(s.tenSize ?? "")}`;
+            const input = document.createElement("input");
+            input.type = "number";
+            input.className = "qty-input";
+            input.dataset.sizeId = String(sizeId);
+            input.value = String(Number(s.soLuongTon) || 0);
+            input.min = "0";
+            row.append(label, input);
+            container.appendChild(row);
           });
         }
         modal.style.display = "block";
@@ -210,12 +222,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       orders.forEach((order) => {
+        const orderId = Number(order.maDonHang);
+        if (!Number.isSafeInteger(orderId) || orderId < 1) return;
         const tr = document.createElement("tr");
 
         const itemsHtml = order.items
           .map(
             (i) =>
-              `<div style="font-size:13px;">- ${escapeHtml(i.tenSP)} (${escapeHtml(i.tenSize)}) x${i.soLuongMua}</div>`,
+              `<div style="font-size:13px;">- ${escapeHtml(i.tenSP)} (${escapeHtml(i.tenSize)}) x${Number(i.soLuongMua)}</div>`,
           )
           .join("");
 
@@ -225,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const formattedDate = new Date(order.ngayDat).toLocaleString("vi-VN");
 
         tr.innerHTML = `
-                    <td>#${order.maDonHang}</td>
+                    <td>#${orderId}</td>
                     <td>
                       <b>${escapeHtml(order.tenNguoiNhan)}</b><br>
                       <small>${escapeHtml(order.sdt)}</small><br>

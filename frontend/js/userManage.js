@@ -101,35 +101,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const users = data.users || [];
     const tbody = document.querySelector("#userTable tbody");
-    tbody.innerHTML = "";
+    tbody.replaceChildren();
 
     users.forEach((u) => {
+      const userId = Number(u.id);
+      if (!Number.isSafeInteger(userId) || userId < 1) return;
       const tr = document.createElement("tr");
 
-      const isCurrentUser = u.id === currentUser.id;
+      const isCurrentUser = userId === Number(currentUser.id);
       const isAdmin = u.role === "admin";
-
-      // Tạo dropdown role
-      const roleOptions = isAdmin
-        ? '<span style="font-weight: bold; color: #e91e63;">admin</span>'
-        : `<select class="role-select" data-id="${u.id}">
-             <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
-             <option value="staff" ${u.role === "staff" ? "selected" : ""}>staff</option>
-           </select>`;
-
-      tr.innerHTML = `
-        <td>${u.id}</td>
-        <td>${u.ten}</td>
-        <td>${u.email}</td>
-        <td>${roleOptions}</td>
-        <td>
-          ${
-            !isCurrentUser && !isAdmin
-              ? `<button class="action-btn delete-btn" data-id="${u.id}">Xóa</button>`
-              : '<span style="color: #999">-</span>'
-          }
-        </td>
-      `;
+      const idCell = document.createElement("td");
+      idCell.textContent = String(userId);
+      const nameCell = document.createElement("td");
+      nameCell.textContent = String(u.ten ?? "");
+      const emailCell = document.createElement("td");
+      emailCell.textContent = String(u.email ?? "");
+      const roleCell = document.createElement("td");
+      if (isAdmin) {
+        const adminRole = document.createElement("span");
+        adminRole.textContent = "admin";
+        adminRole.style.fontWeight = "bold";
+        adminRole.style.color = "#e91e63";
+        roleCell.appendChild(adminRole);
+      } else {
+        const roleSelect = document.createElement("select");
+        roleSelect.className = "role-select";
+        roleSelect.dataset.id = String(userId);
+        for (const role of ["user", "staff"]) {
+          const option = document.createElement("option");
+          option.value = role;
+          option.textContent = role;
+          option.selected = u.role === role;
+          roleSelect.appendChild(option);
+        }
+        roleCell.appendChild(roleSelect);
+      }
+      const actionsCell = document.createElement("td");
+      if (!isCurrentUser && !isAdmin) {
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "action-btn delete-btn";
+        deleteButton.dataset.id = String(userId);
+        deleteButton.textContent = "Xóa";
+        actionsCell.appendChild(deleteButton);
+      } else {
+        const placeholder = document.createElement("span");
+        placeholder.textContent = "-";
+        placeholder.style.color = "#999";
+        actionsCell.appendChild(placeholder);
+      }
+      tr.append(idCell, nameCell, emailCell, roleCell, actionsCell);
 
       tbody.appendChild(tr);
     });
@@ -198,23 +218,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const orders = data.orders || [];
     const tbody = document.querySelector("#orderTable tbody");
-    tbody.innerHTML = "";
+    tbody.replaceChildren();
 
     if (orders.length === 0) {
-      tbody.innerHTML =
-        '<tr><td colspan="5" style="text-align:center">Chưa có đơn hàng</td></tr>';
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.style.textAlign = "center";
+      cell.textContent = "Chưa có đơn hàng";
+      row.appendChild(cell);
+      tbody.appendChild(row);
       return;
     }
 
     orders.forEach((o) => {
+      const orderId = Number(o.id);
+      if (!Number.isSafeInteger(orderId) || orderId < 1) return;
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${o.id}</td>
-        <td>${o.user_name || "N/A"}</td>
-        <td>${o.status || "Đang xử lý"}</td>
-        <td>${o.date || "N/A"}</td>
-        <td><button class="action-btn edit-btn" data-id="${o.id}">Cập nhật</button></td>
-      `;
+      const values = [
+        orderId,
+        o.user_name || "N/A",
+        o.status || "Đang xử lý",
+        o.date || "N/A",
+      ];
+      for (const value of values) {
+        const cell = document.createElement("td");
+        cell.textContent = String(value);
+        tr.appendChild(cell);
+      }
+      const actionsCell = document.createElement("td");
+      const editButton = document.createElement("button");
+      editButton.className = "action-btn edit-btn";
+      editButton.dataset.id = String(orderId);
+      editButton.textContent = "Cập nhật";
+      actionsCell.appendChild(editButton);
+      tr.appendChild(actionsCell);
       tbody.appendChild(tr);
     });
   }

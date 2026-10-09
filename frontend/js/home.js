@@ -18,22 +18,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderProducts(products) {
     if (!productList) return;
-    productList.innerHTML = "";
+    productList.replaceChildren();
 
     products.forEach((p) => {
+      const productId = Number(p.maSP);
+      if (!Number.isSafeInteger(productId) || productId < 1) return;
       const div = document.createElement("div");
       div.className = "product-card";
 
-      const imgSrc = p.anhSP ? `/Asset/${p.anhSP}` : "/Asset/no-image.jpg";
-      div.innerHTML = `
-        <img src="${imgSrc}" class="product-img" alt="${p.tenSP}">
-        <h3>${p.tenSP}</h3>
-        <p>${Number(p.gia).toLocaleString()} VND</p>
-      `;
+      const image = document.createElement("img");
+      image.src = window.safeAssetUrl(p.anhSP);
+      image.className = "product-img";
+      image.alt = String(p.tenSP ?? "");
+      const title = document.createElement("h3");
+      title.textContent = String(p.tenSP ?? "");
+      const price = document.createElement("p");
+      price.textContent = `${Number(p.gia).toLocaleString()} VND`;
+      div.append(image, title, price);
 
       // CLICK → TRANG CHI TIẾT
       div.addEventListener("click", () => {
-        window.location.href = `/products/${p.maSP}`;
+        window.location.href = `/products/${productId}`;
       });
 
       productList.appendChild(div);

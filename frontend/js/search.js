@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const keyword = urlParams.get("keyword") || "";
   searchInput.value = keyword;
-  searchTitle.innerText = `Kết quả tìm kiếm: "${keyword}"`;
+  searchTitle.textContent = `Kết quả tìm kiếm: "${keyword}"`;
 
   function goToSearch() {
     const kw = searchInput.value.trim();
@@ -45,32 +45,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!res.ok) throw new Error("Không thể tải sản phẩm");
 
     const results = data.products.filter((p) =>
-      p.tenSP.toLowerCase().includes(keyword.toLowerCase()),
+      String(p.tenSP ?? "").toLowerCase().includes(keyword.toLowerCase()),
     );
 
-    searchResults.innerHTML = "";
+    searchResults.replaceChildren();
     if (results.length === 0) {
-      searchResults.innerHTML = `<p>Không tìm thấy sản phẩm cho "${keyword}"</p>`;
+      const message = document.createElement("p");
+      message.textContent = `Không tìm thấy sản phẩm cho "${keyword}"`;
+      searchResults.appendChild(message);
       return;
     }
 
     results.forEach((p) => {
+      const productId = Number(p.maSP);
+      if (!Number.isSafeInteger(productId) || productId < 1) return;
+      const productName = String(p.tenSP ?? "");
       const div = document.createElement("div");
       div.className = "product-card";
-      div.innerHTML = `
-        <img src="${
-          p.anhSP ? `/Asset/${p.anhSP}` : "/Asset/no-image.jpg"
-        }" alt="${p.tenSP}">
-        <h3>${p.tenSP}</h3>
-        <p>${Number(p.gia).toLocaleString()} VND</p>
-      `;
+      const image = document.createElement("img");
+      image.src = window.safeAssetUrl(p.anhSP);
+      image.alt = productName;
+      const title = document.createElement("h3");
+      title.textContent = productName;
+      const price = document.createElement("p");
+      price.textContent = `${Number(p.gia).toLocaleString()} VND`;
+      div.append(image, title, price);
       div.addEventListener("click", () => {
-        window.location.href = `/products/${p.maSP}`;
+        window.location.href = `/products/${productId}`;
       });
       searchResults.appendChild(div);
     });
   } catch (err) {
     console.error(err);
-    searchResults.innerHTML = "<p>Lỗi khi tải sản phẩm</p>";
+    const message = document.createElement("p");
+    message.textContent = "Lỗi khi tải sản phẩm";
+    searchResults.replaceChildren(message);
   }
 });

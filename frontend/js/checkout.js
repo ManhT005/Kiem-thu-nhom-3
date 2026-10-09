@@ -29,8 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.phone) document.getElementById("sdt").value = data.phone;
 
       if (res.ok && data.addresses && data.addresses.length > 0) {
-        addressSelect.innerHTML =
-          '<option value="">-- Chọn địa chỉ giao hàng --</option>';
+        addressSelect.replaceChildren();
+        const prompt = document.createElement("option");
+        prompt.value = "";
+        prompt.textContent = "-- Chọn địa chỉ giao hàng --";
+        addressSelect.appendChild(prompt);
         let hasDefault = false;
         data.addresses.forEach((addr) => {
           const option = document.createElement("option");
@@ -46,8 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!hasDefault && addressSelect.options.length > 1)
           addressSelect.selectedIndex = 1;
       } else {
-        addressSelect.innerHTML =
-          '<option value="">Bạn chưa lưu địa chỉ nào</option>';
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "Bạn chưa lưu địa chỉ nào";
+        addressSelect.replaceChildren(emptyOption);
       }
     } catch (err) {
       console.error("Lỗi tải địa chỉ:", err);
@@ -62,16 +67,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const qrInfo = document.getElementById("qrInfo");
   let totalAmount = 0;
 
-  orderItemsList.innerHTML = "";
+  orderItemsList.replaceChildren();
   checkoutItems.forEach((item) => {
     const itemTotal = item.gia * item.soLuongMua;
     totalAmount += itemTotal;
     const div = document.createElement("div");
     div.className = "order-item";
-    div.innerHTML = `
-            <div><strong>${item.tenSP}</strong> <br> <small>Size: ${item.tenSize} x ${item.soLuongMua}</small></div>
-            <span>${itemTotal.toLocaleString()} đ</span>
-        `;
+    const details = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = String(item.tenSP ?? "");
+    const variant = document.createElement("small");
+    variant.textContent = `Size: ${String(item.tenSize ?? "N/A")} x ${Number(item.soLuongMua)}`;
+    details.append(name, document.createElement("br"), variant);
+    const price = document.createElement("span");
+    price.textContent = `${Number(itemTotal).toLocaleString()} đ`;
+    div.append(details, price);
     orderItemsList.appendChild(div);
   });
   finalTotalEl.innerText = totalAmount.toLocaleString() + " VND";

@@ -24,10 +24,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       cartData = data.cart;
 
       if (!cartList) return;
-      cartList.innerHTML = "";
+      cartList.replaceChildren();
 
       if (cartData.length === 0) {
-        cartList.innerHTML = "<p>Giỏ hàng trống</p>";
+        const emptyMessage = document.createElement("p");
+        emptyMessage.textContent = "Giỏ hàng trống";
+        cartList.appendChild(emptyMessage);
         totalPriceEl.innerText = "0";
         return;
       }
@@ -45,24 +47,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Ảnh sản phẩm
         const img = document.createElement("img");
-        img.src = item.anhSP ? `/Asset/${item.anhSP}` : "/Asset/no-image.jpg";
-        img.alt = item.tenSP;
+        img.src = window.safeAssetUrl(item.anhSP);
+        img.alt = String(item.tenSP ?? "");
         div.appendChild(img);
 
         // Thông tin chi tiết
         const detailsDiv = document.createElement("div");
         detailsDiv.className = "cart-item-details";
         // SỬA: Xóa thẻ p thừa, thêm class item-price để chọn cho đúng
-        detailsDiv.innerHTML = `
-          <h3>${item.tenSP}</h3>
-          <p class="item-size">Size: ${item.tenSize || "N/A"}</p> 
-          <p class="item-price" data-price="${item.gia}">${Number(item.gia).toLocaleString()} VND</p>
-          <div class="quantity-control">
-            <button class="minus">-</button>
-            <input type="number" value="${item.soLuongMua}" min="1" readonly>
-            <button class="plus">+</button>
-          </div>
-        `;
+        const title = document.createElement("h3");
+        title.textContent = String(item.tenSP ?? "");
+        const size = document.createElement("p");
+        size.className = "item-size";
+        size.textContent = `Size: ${String(item.tenSize || "N/A")}`;
+        const price = document.createElement("p");
+        price.className = "item-price";
+        price.dataset.price = String(Number(item.gia));
+        price.textContent = `${Number(item.gia).toLocaleString()} VND`;
+        const quantityControl = document.createElement("div");
+        quantityControl.className = "quantity-control";
+        const minusButton = document.createElement("button");
+        minusButton.className = "minus";
+        minusButton.textContent = "-";
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.value = String(Number(item.soLuongMua));
+        quantityInput.min = "1";
+        quantityInput.readOnly = true;
+        const plusButton = document.createElement("button");
+        plusButton.className = "plus";
+        plusButton.textContent = "+";
+        quantityControl.append(minusButton, quantityInput, plusButton);
+        detailsDiv.append(title, size, price, quantityControl);
         div.appendChild(detailsDiv);
 
         // Nút xóa

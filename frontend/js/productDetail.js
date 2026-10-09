@@ -45,13 +45,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Render thông tin
       productName.innerText = p.tenSP;
       productPrice.innerText = Number(p.gia).toLocaleString() + " VND";
-      productDesc.innerHTML = p.moTa || "Chưa có mô tả";
-      if (p.anhSP) {
-        productImage.src = `/Asset/${p.anhSP}`;
-      }
+      productDesc.textContent = p.moTa || "Chưa có mô tả";
+      productImage.src = window.safeAssetUrl(p.anhSP);
 
       // RENDER SIZE (Giữ nguyên logic cũ của bạn)
-      sizeContainer.innerHTML = "";
+      sizeContainer.replaceChildren();
       if (p.sizes && Array.isArray(p.sizes) && p.sizes.length > 0) {
         p.sizes.forEach((s) => {
           const btn = document.createElement("button");
@@ -91,7 +89,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           sizeContainer.appendChild(btn);
         });
       } else {
-        sizeContainer.innerHTML = "<p>Sản phẩm này chưa có size</p>";
+        const message = document.createElement("p");
+        message.textContent = "Sản phẩm này chưa có size";
+        sizeContainer.appendChild(message);
       }
     } catch (err) {
       console.error(err);
