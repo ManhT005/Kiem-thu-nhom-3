@@ -6,6 +6,7 @@ import { paymentRepository } from "../repositories/payment.repository.js";
 import { createMomoPaymentLink, validateMomoPayUrl } from "./momo.service.js";
 import { withTransaction } from "../utils/transaction.js";
 import { AppError } from "../utils/app-error.js";
+import { releaseVoucher, commitVoucher } from "./voucher.service.js";
 
 const MIN_MOMO_AMOUNT = 1000;
 const MAX_MOMO_AMOUNT = 50_000_000;
@@ -67,6 +68,7 @@ const markOrderCancelled = async (
     actorId: null,
     reason,
   });
+  if (order.maGiamGia) await releaseVoucher(connection, order.maDonHang);
 };
 
 export const createMomoPaymentForOrder = async (
@@ -304,6 +306,7 @@ export const processMomoIpn = async (
       if (affectedRows !== 1) {
         throw new AppError(409, "ORDER_PAYMENT_UPDATE_FAILED", "Unable to confirm paid order");
       }
+      if (order.maGiamGia) await commitVoucher(connection, order.maDonHang);
       await orders.insertHistory(connection, {
         orderId: order.maDonHang,
         previousStatus: order.trangThai,

@@ -18,6 +18,8 @@ import { responseContract } from "./middleware/response-contract.middleware.js";
 import { createPageRouter } from "./routes/page.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import voucherRoutes from "./routes/voucher.routes.js";
 const app = express();
 
 app.use(
@@ -45,6 +47,8 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/vouchers", voucherRoutes);
 app.use("/api", notFound);
 
 // ------------------ STATIC FRONTEND ------------------

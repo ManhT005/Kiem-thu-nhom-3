@@ -23,6 +23,7 @@ export const createPageRouter = (frontendRoot) => {
   router.get("/admin", sendPage("admin"));
   router.get("/staff", sendPage("staff"));
   router.get("/inventory", sendPage("inventory"));
+  router.get("/vouchers", sendPage("vouchers"));
   router.get("/order-success", sendPage("orderSuccess"));
 
   router.get("/html/index.html", redirectQuery("/"));

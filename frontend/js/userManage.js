@@ -96,172 +96,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ------------------- RENDER USERS -------------------
+  let userPage = 1;
+  const message = document.getElementById("user-message");
+  const tell = (text, error = false) => { message.textContent = text; message.style.color = error ? "#a22120" : "#075d8c"; };
   async function renderUsers() {
-    const data = await fetchAPI("users");
-    if (!data || data.error) {
-      alert("Không thể tải danh sách người dùng");
-      return;
+    const query = new URLSearchParams({ page: userPage, limit: 20 });
+    for (const [name,id] of [["search","user-search"],["status","user-status"],["role","user-role"]]) {
+      const value = document.getElementById(id).value.trim(); if (value) query.set(name,value);
     }
-
-    const users = data.users || [];
-    const tbody = document.querySelector("#userTable tbody");
-    tbody.replaceChildren();
-
-    users.forEach((u) => {
-      const userId = Number(u.id);
-      if (!Number.isSafeInteger(userId) || userId < 1) return;
-      const tr = document.createElement("tr");
-
-      const isCurrentUser = userId === Number(currentUser.id);
-      const isAdmin = u.role === "admin";
-      const idCell = document.createElement("td");
-      idCell.textContent = String(userId);
-      const nameCell = document.createElement("td");
-      nameCell.textContent = String(u.ten ?? "");
-      const emailCell = document.createElement("td");
-      emailCell.textContent = String(u.email ?? "");
-      const roleCell = document.createElement("td");
-      if (isAdmin) {
-        const adminRole = document.createElement("span");
-        adminRole.textContent = "admin";
-        adminRole.style.fontWeight = "bold";
-        adminRole.style.color = "#e91e63";
-        roleCell.appendChild(adminRole);
-      } else {
-        const roleSelect = document.createElement("select");
-        roleSelect.className = "role-select";
-        roleSelect.dataset.id = String(userId);
-        for (const role of ["user", "staff"]) {
-          const option = document.createElement("option");
-          option.value = role;
-          option.textContent = role;
-          option.selected = u.role === role;
-          roleSelect.appendChild(option);
-        }
-        roleCell.appendChild(roleSelect);
-      }
-      const actionsCell = document.createElement("td");
-      if (!isCurrentUser && !isAdmin) {
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "action-btn delete-btn";
-        deleteButton.dataset.id = String(userId);
-        deleteButton.textContent = "Xóa";
-        actionsCell.appendChild(deleteButton);
-      } else {
-        const placeholder = document.createElement("span");
-        placeholder.textContent = "-";
-        placeholder.style.color = "#999";
-        actionsCell.appendChild(placeholder);
-      }
-      tr.append(idCell, nameCell, emailCell, roleCell, actionsCell);
-
-      tbody.appendChild(tr);
-    });
-
-    // Thêm event listener cho role select
-    document.querySelectorAll(".role-select").forEach((select) => {
-      select.addEventListener("change", async (e) => {
-        const userId = e.target.dataset.id;
-        const newRole = e.target.value;
-
-        if (confirm(`Bạn có chắc muốn thay đổi quyền thành "${newRole}"?`)) {
-          await updateUserRole(userId, newRole);
-        } else {
-          // Khôi phục giá trị cũ nếu cancel
-          renderUsers();
-        }
-      });
-    });
-
-    // Thêm event listener cho nút xóa
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const userId = e.target.dataset.id;
-        if (confirm("Bạn có chắc muốn xóa người dùng này?")) {
-          await deleteUser(userId);
-        }
-      });
-    });
-  }
-
-  // ------------------- XÓA USER -------------------
-  async function deleteUser(userId) {
-    const data = await fetchAPI(`users/${userId}`, {
-      method: "DELETE",
-    });
-
-    if (data && !data.error) {
-      alert(data.message || "Xóa người dùng thành công!");
-      renderUsers();
-    } else {
-      alert(data?.message || "Lỗi khi xóa người dùng");
-    }
-  }
-
-  // ------------------- CẬP NHẬT ROLE -------------------
-  async function updateUserRole(userId, role) {
-    const data = await fetchAPI(`users/${userId}/role`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
-
-    if (data && !data.error) {
-      alert(data.message || "Cập nhật quyền thành công!");
-      renderUsers();
-    } else {
-      alert(data?.message || "Lỗi khi cập nhật quyền");
-      renderUsers(); // Reload để khôi phục UI
-    }
-  }
-
-  // ------------------- RENDER ORDERS -------------------
-  async function renderOrders() {
-    const data = await fetchAPI("orders");
-    if (!data || data.error) return;
-
-    const orders = data.orders || [];
-    const tbody = document.querySelector("#orderTable tbody");
-    tbody.replaceChildren();
-
-    if (orders.length === 0) {
+    const result = await fetchAPI("admin/users?" + query);
+    if (!result || result.error || !result.success) { tell(result?.message || "Không thể tải tài khoản",true); return; }
+    const data = result.data;
+    const tbody = document.querySelector("#userTable tbody"); tbody.replaceChildren();
+    for (const user of data.items) {
       const row = document.createElement("tr");
-      const cell = document.createElement("td");
-      cell.colSpan = 5;
-      cell.style.textAlign = "center";
-      cell.textContent = "Chưa có đơn hàng";
-      row.appendChild(cell);
-      tbody.appendChild(row);
-      return;
-    }
-
-    orders.forEach((o) => {
-      const orderId = Number(o.id);
-      if (!Number.isSafeInteger(orderId) || orderId < 1) return;
-      const tr = document.createElement("tr");
-      const values = [
-        orderId,
-        o.user_name || "N/A",
-        o.status || "Đang xử lý",
-        o.date || "N/A",
-      ];
-      for (const value of values) {
-        const cell = document.createElement("td");
-        cell.textContent = String(value);
-        tr.appendChild(cell);
+      const cell = (value) => { const element = document.createElement("td"); element.textContent = String(value); row.append(element); return element; };
+      cell(user.id); cell(user.ten); cell(user.email);
+      const roleCell = cell("");
+      const select = document.createElement("select"); select.setAttribute("aria-label", `Quyền của ${user.ten}`);
+      for (const role of ["user","staff","admin"]) { const option = document.createElement("option"); option.value = role; option.textContent = role; select.append(option); }
+      select.value = user.role; select.disabled = Number(user.id) === Number(currentUser.id); roleCell.append(select);
+      cell(user.status === "ACTIVE" ? "Hoạt động" : "Đã khóa");
+      const actions = cell("");
+      const button = document.createElement("button"); button.type = "button";
+      button.textContent = user.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa";
+      button.disabled = Number(user.id) === Number(currentUser.id); actions.append(button);
+      async function change(operation, control, extra = {}) {
+        const reason = document.getElementById("user-reason").value.trim();
+        if (!reason) { tell("Nhập lý do trước khi thay đổi tài khoản.",true); document.getElementById("user-reason").focus(); select.value = user.role; return; }
+        if (!confirm("Thay đổi này sẽ yêu cầu tài khoản đăng nhập lại. Tiếp tục?")) { select.value = user.role; return; }
+        control.disabled = true; control.setAttribute("aria-busy","true");
+        try {
+          const response = await fetchAPI(`admin/users/${user.id}/${operation}`, { method: "PUT",
+            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason,...extra }) });
+          if (!response?.success) tell(response?.message || "Không thể cập nhật tài khoản",true);
+          else tell("Đã cập nhật tài khoản. Phiên đăng nhập cũ đã hết hiệu lực.");
+          await renderUsers();
+        } finally { control.disabled = false; control.removeAttribute("aria-busy"); }
       }
-      const actionsCell = document.createElement("td");
-      const editButton = document.createElement("button");
-      editButton.className = "action-btn edit-btn";
-      editButton.dataset.id = String(orderId);
-      editButton.textContent = "Cập nhật";
-      actionsCell.appendChild(editButton);
-      tr.appendChild(actionsCell);
-      tbody.appendChild(tr);
-    });
+      button.onclick = () => change(user.status === "ACTIVE" ? "lock" : "unlock",button);
+      select.onchange = () => change("role",select,{role:select.value});
+      tbody.append(row);
+    }
+    document.getElementById("user-page").textContent = `Trang ${userPage} / ${Math.max(1,data.pagination.totalPages)}`;
+    document.getElementById("user-prev").disabled = userPage === 1;
+    document.getElementById("user-next").disabled = userPage >= data.pagination.totalPages;
   }
-  // ------------------- KHỞI TẠO -------------------
+  document.getElementById("user-filter").onsubmit = (event) => { event.preventDefault(); userPage = 1; renderUsers(); };
+  document.getElementById("user-prev").onclick = () => { userPage--; renderUsers(); };
+  document.getElementById("user-next").onclick = () => { userPage++; renderUsers(); };
   renderUsers();
-  renderOrders();
 });

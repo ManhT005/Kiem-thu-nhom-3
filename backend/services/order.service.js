@@ -1,5 +1,7 @@
 import { AppError } from "../utils/app-error.js";
 import { createHash } from "node:crypto";
+import { voucherCode } from "../domain/voucher.js";
+import { quoteVoucher, reserveVoucher, releaseVoucher, commitVoucher } from "./voucher.service.js";
 import db from "../config/db.js";
 import { withTransaction } from "../utils/transaction.js";
 import { orderRepository } from "../repositories/order.repository.js";
@@ -58,6 +60,7 @@ export const createOrder = async (
 ) => {
   const items = prepareItems(input.items);
   const paymentMethodId = Number(input.maPTTT);
+  const normalizedVoucherCode = voucherCode(input.voucherCode, true);
   const key = input.idempotencyKey;
   if (key !== undefined && (typeof key !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(key))) {
     throw new AppError(400, "VALIDATION_ERROR", "Invalid checkout idempotency key");
@@ -65,6 +68,7 @@ export const createOrder = async (
   const requestHash = key === undefined ? null : createHash("sha256").update(JSON.stringify({
     items, paymentMethodId, tenNguoiNhan: input.tenNguoiNhan, sdt: input.sdt,
     diaChiGiaoHang: input.diaChiGiaoHang, ghiChu: input.ghiChu || null,
+    ...(normalizedVoucherCode ? { voucherCode: normalizedVoucherCode } : {}),
   })).digest("hex");
 
   if (!Number.isSafeInteger(paymentMethodId) || paymentMethodId < 1) {
@@ -76,17 +80,22 @@ export const createOrder = async (
   }
 
   return transaction(async (connection) => {
+    const user = await repository.lockCheckoutUser(connection, input.userId);
+    if (!user) throw new AppError(401, "USER_NOT_FOUND", "Checkout user no longer exists");
+    if (user.status !== "ACTIVE") throw new AppError(403, "ACCOUNT_LOCKED", "Account is locked");
+    if (user.role !== "user") throw new AppError(403, "FORBIDDEN", "Only customers can create orders");
+    if (input.authTokenVersion !== undefined && input.authTokenVersion !== user.token_version) {
+      throw new AppError(401, "TOKEN_REVOKED", "Login again");
+    }
     if (key !== undefined) {
-      if (!await repository.lockCheckoutUser(connection, input.userId)) {
-        throw new AppError(401, "USER_NOT_FOUND", "Checkout user no longer exists");
-      }
       const existing = await repository.findCheckoutRequest(connection, input.userId, key);
       if (existing) {
         if (existing.request_hash !== requestHash) {
           throw new AppError(409, "IDEMPOTENCY_CONFLICT", "Checkout key was used for different order details");
         }
         return { maDonHang: existing.maDonHang, tongTien: Number(existing.tongTien),
-          trangThai: existing.trangThai, paymentStatus: existing.paymentStatus };
+          subtotalBeforeDiscount: Number(existing.subtotal_before_discount), discountAmount: Number(existing.discount_amount),
+          voucherCode: existing.voucher_code_snapshot, trangThai: existing.trangThai, paymentStatus: existing.paymentStatus };
       }
     }
     const paymentMethod = await repository.findPaymentMethod(
@@ -135,6 +144,7 @@ export const createOrder = async (
     }
 
     const status = ORDER_STATUS.PENDING;
+    const quote = await quoteVoucher(connection, normalizedVoucherCode, input.userId, total);
     const paymentStatus =
       paymentMethod.tenPTTT === "MOMO" ? "PENDING" : "NOT_REQUIRED";
     const orderId = await repository.insertOrder(connection, {
@@ -143,11 +153,14 @@ export const createOrder = async (
       sdt: input.sdt,
       diaChiGiaoHang: input.diaChiGiaoHang,
       ghiChu: input.ghiChu || null,
-      tongTien: total,
+      tongTien: total - quote.discountAmount,
+      subtotalBeforeDiscount: total, discountAmount: quote.discountAmount,
+      voucherId: quote.voucherId, voucherCode: quote.code,
       maPTTT: paymentMethodId,
       trangThai: status,
       paymentStatus,
     });
+    await reserveVoucher(connection, quote, orderId, input.userId);
 
     for (const item of pricedItems) {
       await repository.insertOrderItem(connection, orderId, item);
@@ -182,7 +195,8 @@ export const createOrder = async (
 
     return {
       maDonHang: orderId,
-      tongTien: total,
+      tongTien: total - quote.discountAmount,
+      subtotalBeforeDiscount: total, discountAmount: quote.discountAmount, voucherCode: quote.code,
       trangThai: status,
       paymentStatus,
     };
@@ -288,7 +302,11 @@ const transitionOrder = async (
     });
     if (targetStatus === ORDER_STATUS.CANCELLED) {
       await repository.cancelPendingPayment(connection, normalizedOrderId);
+      if (order.maGiamGia && !["PAID","REFUND_REQUIRED"].includes(order.payment_status)) {
+        await releaseVoucher(connection, normalizedOrderId);
+      }
     }
+    if (targetStatus === ORDER_STATUS.COMPLETED && order.maGiamGia) await commitVoucher(connection, normalizedOrderId);
 
     return { maDonHang: normalizedOrderId, trangThai: targetStatus };
   });
@@ -314,6 +332,9 @@ const mapOrderRows = (rows) => {
         paymentStatus: row.payment_status,
         paymentExpiresAt: row.payment_expires_at,
         tongTien: row.tongTien,
+        subtotalBeforeDiscount: row.subtotal_before_discount,
+        discountAmount: row.discount_amount,
+        voucherCode: row.voucher_code_snapshot,
         tenNguoiNhan: row.tenNguoiNhan,
         sdt: row.sdt,
         diaChiGiaoHang: row.diaChiGiaoHang,

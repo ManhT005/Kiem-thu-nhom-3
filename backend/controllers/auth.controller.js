@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/users.js";
 import { SECRET_KEY, JWT_EXPIRES_IN } from "../config/config.js";
+import { AppError } from "../utils/app-error.js";
 
 // ====================== REGISTER ===========================
 export const register = (req, res) => {
@@ -34,7 +35,7 @@ export const register = (req, res) => {
 };
 
 // ====================== LOGIN ===========================
-export const login = (req, res) => {
+export const login = (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password)
@@ -50,9 +51,10 @@ export const login = (req, res) => {
     // SO SÁNH BẰNG matKhau TRONG DB
     const valid = bcrypt.compareSync(password, user.matKhau);
     if (!valid) return res.status(400).json({ message: "Sai mật khẩu" });
+    if (user.status !== "ACTIVE") return next(new AppError(403, "ACCOUNT_LOCKED", "Tài khoản đã bị khóa"));
 
     // TẠO TOKEN
-    const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, {
+    const token = jwt.sign({ id: user.id, role: user.role, token_version: user.token_version }, SECRET_KEY, {
       expiresIn: JWT_EXPIRES_IN,
     });
 
@@ -64,6 +66,7 @@ export const login = (req, res) => {
         ten: user.ten,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
     });
   });

@@ -3,7 +3,7 @@ import { applyMovement } from "../services/inventory.service.js";
 const ORDER_ROWS_SELECT = `
   SELECT
     d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.payment_status,
-    d.payment_expires_at, d.tenNguoiNhan,
+    d.payment_expires_at, d.tenNguoiNhan, d.subtotal_before_discount, d.discount_amount, d.voucher_code_snapshot,
     d.sdt, d.diaChiGiaoHang, d.ghiChu,
     c.maSP, c.maSize, c.soLuongMua, c.giaMua,
     s.tenSP, s.anhSP, sz.tenSize
@@ -52,13 +52,14 @@ const buildOrderFilters = (filters) => {
 
 export const orderRepository = {
   async lockCheckoutUser(connection, userId) {
-    const [rows] = await connection.execute("SELECT id FROM users WHERE id = ? FOR UPDATE", [userId]);
+    const [rows] = await connection.execute("SELECT id, status, role, token_version FROM users WHERE id = ? FOR UPDATE", [userId]);
     return rows[0] ?? null;
   },
 
   async findCheckoutRequest(connection, userId, key) {
     const [rows] = await connection.execute(
-      `SELECT r.request_hash, d.maDonHang, d.tongTien, d.trangThai, d.payment_status AS paymentStatus
+      `SELECT r.request_hash, d.maDonHang, d.tongTien, d.trangThai, d.payment_status AS paymentStatus,
+       d.subtotal_before_discount, d.discount_amount, d.voucher_code_snapshot
        FROM OrderCheckoutRequest r JOIN DonHang d ON d.maDonHang = r.order_id
        WHERE r.user_id = ? AND r.idempotency_key = ? FOR UPDATE`, [userId, key]);
     return rows[0] ?? null;
@@ -100,9 +101,9 @@ export const orderRepository = {
     const [result] = await connection.execute(
       `INSERT INTO DonHang
        (id, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT,
-        trangThai, payment_status, payment_expires_at)
+        trangThai, payment_status, payment_expires_at, maGiamGia, subtotal_before_discount, discount_amount, voucher_code_snapshot)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
-         CASE WHEN ? = 'PENDING' THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE) ELSE NULL END)`,
+         CASE WHEN ? = 'PENDING' THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE) ELSE NULL END, ?, ?, ?, ?)`,
       [
         order.userId,
         order.tenNguoiNhan,
@@ -114,6 +115,7 @@ export const orderRepository = {
         order.trangThai,
         order.paymentStatus,
         order.paymentStatus,
+        order.voucherId, order.subtotalBeforeDiscount, order.discountAmount, order.voucherCode,
       ],
     );
     return result.insertId;
@@ -169,7 +171,7 @@ export const orderRepository = {
 
   async lockOrder(connection, orderId) {
     const [rows] = await connection.execute(
-      "SELECT maDonHang, id, trangThai FROM DonHang WHERE maDonHang = ? FOR UPDATE",
+      "SELECT maDonHang, id, trangThai, maGiamGia, payment_status FROM DonHang WHERE maDonHang = ? FOR UPDATE",
       [orderId],
     );
     return rows[0] ?? null;
@@ -213,8 +215,8 @@ export const orderRepository = {
     );
     await connection.execute(
       `UPDATE DonHang
-       SET payment_status = 'CANCELLED'
-       WHERE maDonHang = ? AND payment_status = 'PENDING'`,
+       SET payment_status = CASE WHEN payment_status = 'PAID' THEN 'REFUND_REQUIRED' ELSE 'CANCELLED' END
+       WHERE maDonHang = ? AND payment_status IN ('PENDING','PAID')`,
       [orderId],
     );
   },

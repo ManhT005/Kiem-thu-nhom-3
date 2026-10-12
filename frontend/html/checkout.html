@@ -91,6 +91,11 @@
       <div class="checkout-summary">
         <h2>Đơn hàng của bạn</h2>
         <div id="orderItemsList"></div>
+        <label for="voucherCode">Mã ưu đãi</label>
+        <input id="voucherCode" maxlength="64" autocomplete="off">
+        <button type="button" id="applyVoucher">Kiểm tra ưu đãi</button>
+        <p id="voucherFeedback" role="status" aria-live="polite"></p>
+        <p>Giảm giá: <span id="voucherDiscount">0 VND</span></p>
         <hr />
         <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 10px;">
           <span>Tổng tiền:</span>

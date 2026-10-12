@@ -2,7 +2,7 @@ export const paymentRepository = {
   async lockOrder(connection, orderId) {
     const [rows] = await connection.execute(
       `SELECT d.maDonHang, d.id, d.maPTTT, d.trangThai, d.tongTien,
-              d.payment_status, d.payment_expires_at, p.tenPTTT
+              d.payment_status, d.payment_expires_at, d.maGiamGia, p.tenPTTT
        FROM DonHang d
        JOIN phuongThucThanhToan p ON p.maPTTT = d.maPTTT
        WHERE d.maDonHang = ?

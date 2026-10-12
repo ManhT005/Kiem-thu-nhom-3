@@ -12,6 +12,7 @@
       <div class="header-right">
         <span id="adminName">Admin</span>
         <a href="/inventory">Phiếu nhập và lịch sử kho</a>
+        <a href="/vouchers">Quản lý voucher</a>
         <button id="logoutBtn">Đăng xuất</button>
       </div>
     </header>
@@ -28,6 +29,15 @@
       <!-- Quản lý tài khoản -->
       <div class="tab-content" id="users">
         <h2>Danh sách người dùng</h2>
+        <p>Tài khoản cần đăng nhập lại sau khi khóa, mở khóa hoặc đổi quyền.</p>
+        <p id="user-message" role="status" aria-live="polite"></p>
+        <form id="user-filter">
+          <label>Tìm tên / email <input id="user-search" maxlength="100"></label>
+          <label>Trạng thái <select id="user-status"><option value="">Tất cả</option><option value="ACTIVE">Hoạt động</option><option value="LOCKED">Đã khóa</option></select></label>
+          <label>Quyền <select id="user-role"><option value="">Tất cả</option><option>user</option><option>staff</option><option>admin</option></select></label>
+          <button type="submit">Lọc tài khoản</button>
+        </form>
+        <label>Lý do thay đổi <input id="user-reason" maxlength="500" required></label>
         <table id="userTable">
           <thead>
             <tr>
@@ -35,11 +45,13 @@
               <th>Tên</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Trạng thái</th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
+        <button id="user-prev" type="button">Trang trước</button><span id="user-page"></span><button id="user-next" type="button">Trang sau</button>
       </div>
 
       <!-- Quản lý danh mục -->
