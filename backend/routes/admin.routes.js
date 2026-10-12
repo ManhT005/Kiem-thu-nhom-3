@@ -4,9 +4,14 @@ import { authorizeRoles } from "../middleware/authorize.middleware.js";
 import { success } from "../utils/api-response.js";
 import { changeUserLifecycle, listUsers } from "../services/user-lifecycle.service.js";
 import { saveVoucher, setVoucherStatus, listVouchers } from "../services/voucher.service.js";
+import dashboardRoutes from "./dashboard.routes.js";
+import { reconciliation,reconciliationSummary } from "../controllers/dashboard.controller.js";
 
 const router = express.Router();
 router.use(verifyToken, authorizeRoles("admin"));
+router.use("/dashboard",dashboardRoutes);
+router.get("/payments/reconciliation",reconciliation);
+router.get("/payments/reconciliation/summary",reconciliationSummary);
 const endpoint = (work,status=200) => async (req,res,next) => {
   try { return success(res,{ status, data: await work(req) }); } catch(error) { return next(error); }
 };
