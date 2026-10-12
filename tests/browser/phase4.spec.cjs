@@ -32,7 +32,9 @@ test("admin UI locks/unlocks a user and changes role while old sessions are reje
     await row.getByRole("button",{name:"Mở khóa"}).click();await expect(row).toContainText("Hoạt động");
     expect((await page.request.get("/api/cart",{headers:{Authorization:`Bearer ${user.token}`}})).status()).toBe(401);
     const fresh=await login(page,email,password);
-    await row.locator("select").selectOption("staff");await expect(row.locator("select")).toHaveValue("staff");
+    const changed=page.waitForResponse(response=>response.url().endsWith(`/api/admin/users/${userId}/role`)&&response.request().method()==="PUT");
+    await row.locator("select").selectOption("staff");
+    expect((await changed).status()).toBe(200);await expect(row.locator("select")).toHaveValue("staff");
     await expect(page.locator("#user-message")).toContainText("Đã cập nhật tài khoản");
     expect((await page.request.get("/api/inventory/receipts",{headers:{Authorization:`Bearer ${fresh.token}`}})).status()).toBe(401);
     const staff=await login(page,email,password);expect(staff.user.role).toBe("staff");

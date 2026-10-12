@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!reason) { tell("Nhập lý do trước khi thay đổi tài khoản.",true); document.getElementById("user-reason").focus(); select.value = user.role; return; }
         if (!confirm("Thay đổi này sẽ yêu cầu tài khoản đăng nhập lại. Tiếp tục?")) { select.value = user.role; return; }
         control.disabled = true; control.setAttribute("aria-busy","true");
+        tell("Đang cập nhật tài khoản...");
         try {
           const response = await fetchAPI(`admin/users/${user.id}/${operation}`, { method: "PUT",
             headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason,...extra }) });
