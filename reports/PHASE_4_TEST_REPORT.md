@@ -3,7 +3,7 @@
 Date: 2026-10-12. Tester: Codex automated suites.
 Branch: **feature/p4-user-voucher**, based on Phase 3 head **6b0550f063d8be7fb24746bc7ff3f3b2a158754a**.
 Tested implementation: **9e5a566762cc8bb9e1b2af5a26de120141380fc6** (includes 78f8ed4 and the UI/test synchronization fix).
-This report is a documentation-only follow-up.
+The report was added as a documentation-only follow-up; display-only verification is recorded below.
 
 Environment: Windows/Asia-Saigon; Node **22.23.3**, MySQL **8.0.46**, Chromium **156.0.8078.4**. Dedicated clothes_p34_test database on 127.0.0.1:13316, business sessions UTC/READ COMMITTED with canonical stock locks. Schema 001–006 was rebuilt only in this disposable database.
 
@@ -53,9 +53,11 @@ The first full run reached 49 unit, 32 MySQL and all Newman PASS, but one browse
 
 Final artifacts are archived in ignored test-results/phase4-evidence/: final log, unit/integration/browser JUnit, all three Newman JSON/HTML reports, and Phase 3/4 screenshots. Files remain uncommitted because API reports include disposable tokens. CI uploads fresh commerce-test-evidence.
 
+Visual review then aligned the account filters/actions and checkout coupon controls with the existing UI, with 44px targets, wrapping controls and visible keyboard focus. The two affected real browser flows were rerun on display revision 4e952bf54692af0002a72832fb59f6298b9e5ea4: **2/2 PASS**. Business JavaScript/services did not change. Supplemental browser XML, log and refreshed screenshots are archived as browser-ui.xml, phase4-ui-final.log and Phase 4 screenshots. The final pushed head runs the complete CI suite again.
+
 ## Acceptance / handover
 
-**Local acceptance: PASS.** Phase 3 pushed head 6b0550f has successful remote CI: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/38227680884. Phase 4 remote verdict must be checked on the final pushed head; this report does not infer success before that run completes. Human review/merge and release approval remain with the owner.
+**Local acceptance: PASS.** Phase 3 pushed head 6b0550f has successful remote CI: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/38227680884. Phase 4 head 1383d3b also passed CI: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/38232472913. Check the final pushed head after the display-only follow-up as well; success is not inferred before its run completes. Human review/merge and release approval remain with the owner.
 
 Merge the Phase 2 baseline into develop first if not already present, then Phase 3 and Phase 4 in that order. Phase 4 can be reviewed as a stacked PR against feature/p3-inventory-integrity until that branch is integrated.
 

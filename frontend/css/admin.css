@@ -304,4 +304,5 @@ button.delete-btn:hover {
 #userTable button, #user-filter button { cursor: pointer; color: #941043; border-color: #bf6889; }
 #users button:disabled { opacity: .55; cursor: default; }
 #users :focus-visible, .admin-header a:focus-visible { outline: 3px solid #941043; outline-offset: 3px; }
+.admin-header a:focus-visible { outline-color: white; }
 @media (max-width: 650px) { #user-filter label, #users > label { width: 100%; } #user-search, #user-reason { width: 100%; } }
