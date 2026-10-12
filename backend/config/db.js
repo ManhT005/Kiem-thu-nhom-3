@@ -9,6 +9,12 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
   queueLimit: 0,
+  timezone: "Z",
+});
+
+// DATETIME payment deadlines use UTC both in SQL NOW() and in the JS driver.
+db.on("connection", (connection) => {
+  connection.query("SET time_zone = '+00:00'");
 });
 
 export default db;

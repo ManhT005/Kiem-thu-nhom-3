@@ -517,6 +517,11 @@ function getStatusClass(status) {
 
 function logout() {
   localStorage.removeItem("token");
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("checkoutSession:")) localStorage.removeItem(key);
+  }
+  localStorage.removeItem("checkoutItems");
+  localStorage.removeItem("pendingMomoOrderId");
   localStorage.removeItem("user");
   window.location.href = "/login";
 }

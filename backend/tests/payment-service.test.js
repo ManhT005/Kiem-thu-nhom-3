@@ -131,14 +131,14 @@ test("creates an authenticated MoMo link using the server-side order total", asy
       ...deps,
       makePaymentLink: async (value) => {
         request = value;
-        return { resultCode: 0, payUrl: "https://momo.example/pay" };
+        return { resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" };
       },
     },
   );
 
   assert.equal(request.amount, 2500);
   assert.equal(result.maDonHang, 42);
-  assert.equal(result.payUrl, "https://momo.example/pay");
+  assert.equal(result.payUrl, "https://test-payment.momo.vn/pay");
   assert.equal(state.payment.amount, 2500);
 });
 
@@ -159,6 +159,18 @@ test("rejects payment-link creation for an order owned by another user", async (
   );
 });
 
+test("does not return a payment URL when the order expires while the provider is responding", async () => {
+  const state = makePaymentState();
+  const deps = makeDependencies(state);
+  await assert.rejects(createMomoPaymentForOrder({ orderId: 42, userId: 7 }, {
+    ...deps, makePaymentLink: async () => {
+      state.order.payment_expires_at = new Date(Date.now() - 1000);
+      return { resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" };
+    },
+  }), { code: "PAYMENT_EXPIRED" });
+  assert.equal(state.payment.pay_url, null);
+});
+
 test("confirms a paid order once and treats repeated IPN as idempotent", async () => {
   const state = makePaymentState();
   const deps = makeDependencies(state);
@@ -166,7 +178,7 @@ test("confirms a paid order once and treats repeated IPN as idempotent", async (
     { orderId: 42, userId: 7 },
     {
       ...deps,
-      makePaymentLink: async () => ({ resultCode: 0, payUrl: "pay-url" }),
+      makePaymentLink: async () => ({ resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" }),
     },
   );
   const payload = makeIpn(state);
@@ -196,7 +208,7 @@ test("rejects mismatched callback amounts without updating payment state", async
     { orderId: 42, userId: 7 },
     {
       ...deps,
-      makePaymentLink: async () => ({ resultCode: 0, payUrl: "pay-url" }),
+      makePaymentLink: async () => ({ resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" }),
     },
   );
 
@@ -219,7 +231,7 @@ test("a failed IPN cancels the pending order and releases stock only once", asyn
     { orderId: 42, userId: 7 },
     {
       ...deps,
-      makePaymentLink: async () => ({ resultCode: 0, payUrl: "pay-url" }),
+      makePaymentLink: async () => ({ resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" }),
     },
   );
   const payload = makeIpn(state, { resultCode: 1006 });
@@ -253,7 +265,7 @@ test("expires payment once and releases reserved stock", async () => {
     {
       ...deps,
       now: () => new Date(Date.now() - 60_000),
-      makePaymentLink: async () => ({ resultCode: 0, payUrl: "pay-url" }),
+      makePaymentLink: async () => ({ resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" }),
     },
   );
 
@@ -300,7 +312,7 @@ test("records a late successful payment for manual refund without reopening orde
     { orderId: 42, userId: 7 },
     {
       ...deps,
-      makePaymentLink: async () => ({ resultCode: 0, payUrl: "pay-url" }),
+      makePaymentLink: async () => ({ resultCode: 0, payUrl: "https://test-payment.momo.vn/pay" }),
     },
   );
   state.payment.status = "EXPIRED";

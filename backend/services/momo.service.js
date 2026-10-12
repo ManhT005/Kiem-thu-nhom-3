@@ -30,6 +30,16 @@ const getMomoCredentials = () => {
   return { accessKey, secretKey };
 };
 
+export const validateMomoPayUrl = (value) => {
+  let url;
+  try { url = new URL(value); } catch { throw new Error("Invalid MoMo payment URL"); }
+  if (url.protocol !== "https:" || url.username || url.password ||
+      url.port || !["test-payment.momo.vn", "payment.momo.vn"].includes(url.hostname)) {
+    throw new Error("Invalid MoMo payment URL");
+  }
+  return url.href;
+};
+
 const getPaymentUrls = (redirectQuery) => {
   const appBaseUrl = process.env.APP_BASE_URL?.replace(/\/+$/, "");
   const publicApiUrl = (process.env.PUBLIC_API_URL || appBaseUrl)?.replace(
@@ -95,6 +105,7 @@ export const createMomoPaymentLink = async ({
       extraData,
       signature,
     },
+    { timeout: 15_000 },
   );
 
   return response.data;

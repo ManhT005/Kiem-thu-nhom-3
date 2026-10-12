@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import {
   buildMomoIpnSignatureString,
   verifyMomoIpnSignature,
+  validateMomoPayUrl,
 } from "../services/momo.service.js";
 
 test("verifies MoMo IPN signatures and rejects altered callback data", () => {
@@ -50,6 +51,14 @@ test("verifies MoMo IPN signatures and rejects altered callback data", () => {
     ),
     rawSignature,
   );
+});
+
+test("payment URL only allows HTTPS MoMo provider hosts", () => {
+  assert.equal(validateMomoPayUrl("https://test-payment.momo.vn/v2/pay?a=1"), "https://test-payment.momo.vn/v2/pay?a=1");
+  for (const url of ["javascript:alert(1)", "http://payment.momo.vn/pay", "https://payment.momo.vn.evil.test",
+    "https://user@payment.momo.vn/pay", "https://payment.momo.vn:8443/pay", "//payment.momo.vn/pay"]) {
+    assert.throws(() => validateMomoPayUrl(url), /Invalid MoMo/);
+  }
 });
 
 test("verifies MoMo IPN without an accessKey callback property", () => {

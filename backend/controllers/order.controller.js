@@ -6,8 +6,14 @@ import {
   getMyOrders as getMyOrdersService,
   getOrderHistory as getOrderHistoryService,
   updateOrderStatus as updateOrderStatusService,
+  getPaymentMethods as getPaymentMethodsService,
 } from "../services/order.service.js";
 import { success } from "../utils/api-response.js";
+
+export const getPaymentMethods = async (_req, res, next) => {
+  try { return success(res, { data: await getPaymentMethodsService() }); }
+  catch (error) { return next(error); }
+};
 
 export const createOrder = async (req, res, next) => {
   try {

@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
   const checkoutItems = JSON.parse(localStorage.getItem("checkoutItems")) || [];
 
-  if (!token || checkoutItems.length === 0) {
+  if (!token || !user?.id || checkoutItems.length === 0) {
     alert("Không có thông tin đơn hàng!");
     window.location.href = "/cart";
     return;
@@ -88,8 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- 3. XỬ LÝ QR CODE (Giữ nguyên) ---
   ptttSelect.addEventListener("change", (e) => {
-    // Giả sử ID=2 là Chuyển khoản ngân hàng
-    if (e.target.value === "2") {
+    localStorage.removeItem(`checkoutSession:${user.id}`);
+    if (paymentMethods.find((method) => String(method.maPTTT) === e.target.value)?.code === "BANK_TRANSFER") {
       qrInfo.style.display = "block";
       const sdt = document.getElementById("sdt").value;
       document.getElementById("qrNote").innerText =
@@ -125,112 +125,122 @@ document.addEventListener("DOMContentLoaded", () => {
     return isValid;
   }
 
-  // ==================================================================
-  // [QUAN TRỌNG] 5. XỬ LÝ NÚT ĐẶT HÀNG (ĐÃ TÍCH HỢP MOMO)
-  // ==================================================================
-  document
-    .getElementById("btnPlaceOrder")
-    .addEventListener("click", async () => {
-      const tenNguoiNhan = document.getElementById("tenNguoiNhan").value;
-      const sdt = document.getElementById("sdt").value;
-      const diaChiGiaoHang = document.getElementById("diaChiGiaoHang").value;
-      const maPTTT = document.getElementById("maPTTT").value; // Lấy ID phương thức thanh toán
-      const ghiChu = document.getElementById("ghiChu").value;
+  const sessionKey = `checkoutSession:${user.id}`;
+  localStorage.removeItem("pendingMomoOrderId");
+  const button = document.getElementById("btnPlaceOrder");
+  const buttonText = button.textContent;
+  let submitting = false;
+  button.disabled = true;
+  let paymentMethods = [];
+  const methodsReady = fetch("/api/orders/payment-methods")
+    .then(async (response) => {
+      const result = await response.json();
+      if (!response.ok || !Array.isArray(result.data)) throw new Error("Không thể tải phương thức thanh toán");
+      paymentMethods = result.data;
+      ptttSelect.replaceChildren();
+      for (const method of paymentMethods) {
+        const option = document.createElement("option");
+        option.value = method.maPTTT;
+        option.textContent = method.tenPTTT;
+        ptttSelect.appendChild(option);
+      }
+      button.disabled = paymentMethods.length === 0;
+    }).catch((error) => alert(error.message));
 
-      // Validate dữ liệu trước
-      if (!validateForm(tenNguoiNhan, sdt, diaChiGiaoHang)) return;
-
+  button.addEventListener("click", async () => {
+    if (submitting) return;
+    const tenNguoiNhan = document.getElementById("tenNguoiNhan").value.trim();
+    const sdt = document.getElementById("sdt").value.trim();
+    const diaChiGiaoHang = document.getElementById("diaChiGiaoHang").value.trim();
+    if (!validateForm(tenNguoiNhan, sdt, diaChiGiaoHang)) return;
+    submitting = true;
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "ĐANG XỬ LÝ...";
+    try {
+      await methodsReady;
+      const method = paymentMethods.find((value) => String(value.maPTTT) === ptttSelect.value);
+      if (!method) throw new Error("Vui lòng chọn phương thức thanh toán");
       const payload = {
-        tenNguoiNhan,
-        sdt,
-        diaChiGiaoHang,
-        maPTTT,
-        ghiChu,
-        tongTien: totalAmount,
-        items: checkoutItems,
+        tenNguoiNhan, sdt, diaChiGiaoHang, maPTTT: method.maPTTT,
+        ghiChu: document.getElementById("ghiChu").value,
+        items: checkoutItems.map(({ maSP, maSize, soLuongMua }) => ({ maSP, maSize, soLuongMua })),
       };
-
-      // -------------------------------------------------------------
-      // A. NẾU CHỌN MOMO (Giả sử ID của MoMo trong DB là "3")
-      // Bạn cần kiểm tra trong Database xem ID của MoMo là số mấy nhé!
-      // -------------------------------------------------------------
-      if (maPTTT === "3") {
-        try {
-          let orderId = localStorage.getItem("pendingMomoOrderId");
-          if (!orderId) {
-            const orderResponse = await fetch("/api/orders/create", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(payload),
-            });
-            const orderData = await orderResponse.json();
-            if (!orderResponse.ok || !orderData.data?.maDonHang) {
-              alert(orderData.message || "Không thể tạo đơn hàng");
-              return;
-            }
-            orderId = String(orderData.data.maDonHang);
-            localStorage.setItem("pendingMomoOrderId", orderId);
-          }
-
-          const res = await fetch("/api/payments/momo/create", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ orderId }),
-          });
-
-          const data = await res.json();
-
-          if (res.ok && data.data?.payUrl) {
-            alert("Đang chuyển hướng sang MoMo...");
-            window.location.href = data.data.payUrl;
-          } else {
-            if (data.code === "PAYMENT_EXPIRED" || data.code === "ORDER_CANCELLED") {
-              localStorage.removeItem("pendingMomoOrderId");
-            }
-            alert(
-              "Lỗi tạo giao dịch MoMo: " +
-                (data.message || "Không xác định"),
-            );
-          }
-        } catch (err) {
-          console.error("Lỗi MoMo:", err);
-          alert("Không thể kết nối tới cổng thanh toán MoMo");
-        }
-        return; // Dừng lại, không chạy code đặt hàng thường bên dưới
+      const fingerprint = JSON.stringify(payload);
+      let session;
+      try { session = JSON.parse(localStorage.getItem(sessionKey)); } catch { /* discard corrupt state */ }
+      if (!session || session.fingerprint !== fingerprint) {
+        session = { fingerprint, idempotencyKey: crypto.randomUUID() };
+        localStorage.setItem(sessionKey, JSON.stringify(session));
       }
-
-      // -------------------------------------------------------------
-      // B. NẾU CHỌN COD HOẶC CHUYỂN KHOẢN (Logic cũ của bạn)
-      // -------------------------------------------------------------
-      localStorage.removeItem("pendingMomoOrderId");
-      try {
-        const res = await fetch("/api/orders/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+      if (method.code === "MOMO" && session.orderId) {
+        const response = await fetch(`/api/payments/momo/orders/${encodeURIComponent(session.orderId)}/status`, { headers });
+        const status = await response.json();
+        if (!response.ok) {
+          if ([401, 403, 404].includes(response.status)) localStorage.removeItem(sessionKey);
+          throw new Error(status.message || "Không thể xác minh đơn hàng");
+        }
+        if (status.data.paymentStatus !== "PENDING") {
+          localStorage.removeItem(sessionKey);
+          if (status.data.paymentStatus === "PAID") {
+            localStorage.removeItem("checkoutItems");
+            window.location.href = `/order-success?maDonHang=${session.orderId}`;
+            return;
+          }
+          throw new Error("Đơn hàng đã kết thúc hoặc hết hạn. Vui lòng đặt lại.");
+        }
+      }
+      const orderResponse = await fetch("/api/orders/create", {
+        method: "POST", headers,
+        body: JSON.stringify({ ...payload, idempotencyKey: session.idempotencyKey }),
+      });
+      const orderData = await orderResponse.json();
+      if (!orderResponse.ok || !orderData.data?.maDonHang) {
+        throw new Error(orderData.message || "Không thể tạo đơn hàng");
+      }
+      const orderId = orderData.data.maDonHang;
+      if (orderData.data.trangThai === "Đã hủy") {
+        localStorage.removeItem(sessionKey);
+        throw new Error("Đơn hàng đã hủy. Vui lòng đặt lại.");
+      }
+      session.orderId = orderId;
+      localStorage.setItem(sessionKey, JSON.stringify(session));
+      if (method.code === "MOMO") {
+        if (orderData.data.paymentStatus !== "PENDING") {
+          localStorage.removeItem(sessionKey);
+          window.location.href = `/order-success?maDonHang=${orderId}`;
+          return;
+        }
+        const response = await fetch("/api/payments/momo/create", {
+          method: "POST", headers, body: JSON.stringify({ orderId }),
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          alert("Đặt hàng thành công!");
-          localStorage.removeItem("checkoutItems");
-          window.location.href = "/";
-        } else {
-          alert(data.message || "Có lỗi xảy ra");
+        const data = await response.json();
+        if (!response.ok || !data.data?.payUrl) {
+          if (["PAYMENT_EXPIRED", "ORDER_CANCELLED", "PAYMENT_NOT_PENDING"].includes(data.code)) {
+            localStorage.removeItem(sessionKey);
+          }
+          throw new Error(data.message || "Không thể tạo giao dịch MoMo");
         }
-      } catch (error) {
-        console.error(error);
-        alert("Lỗi kết nối server");
+        const payUrl = new URL(data.data.payUrl);
+        if (payUrl.protocol !== "https:" || payUrl.username || payUrl.password || payUrl.port ||
+            !["test-payment.momo.vn", "payment.momo.vn"].includes(payUrl.hostname)) {
+          throw new Error("Địa chỉ thanh toán không hợp lệ");
+        }
+        window.location.href = payUrl.href;
+      } else {
+        localStorage.removeItem(sessionKey);
+        localStorage.removeItem("checkoutItems");
+        alert("Đặt hàng thành công!");
+        window.location.href = "/";
       }
-    });
+    } catch (error) {
+      alert(error.message || "Lỗi kết nối server. Vui lòng thử lại.");
+    } finally {
+      submitting = false;
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+      button.textContent = buttonText;
+    }
+  });
 });

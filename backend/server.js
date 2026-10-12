@@ -1,81 +1,55 @@
 import "dotenv/config";
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "node:url";
-import authRoutes from "./routes/auth.routes.js";
-import productRoutes from "./routes/product.routes.js";
-import userRoutes from "./routes/user.routes.js";
-import khoRoutes from "./routes/kho.routes.js";
-import categoryRoutes from "./routes/category.routes.js";
-import cartRoutes from "./routes/cart.routes.js";
-import orderRoutes from "./routes/order.routes.js";
-import cors from "cors";
-import { CORS_ORIGIN } from "./config/config.js";
-import { success } from "./utils/api-response.js";
-import { notFound } from "./middleware/not-found.middleware.js";
-import { errorHandler } from "./middleware/error.middleware.js";
-import { responseContract } from "./middleware/response-contract.middleware.js";
-import { createPageRouter } from "./routes/page.routes.js";
-import paymentRoutes from "./routes/payment.routes.js";
-import { expirePendingMomoPayments } from "./services/payment.service.js";
-const app = express();
-
-app.use(
-  cors({
-    origin: CORS_ORIGIN.split(",").map((origin) => origin.trim()),
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
-app.use(express.json());
-app.use(responseContract);
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const frontendRoot = path.resolve(__dirname, "../frontend");
-
-// ------------------ API ROUTES -----------------
-app.get("/api/health", (_req, res) => success(res, { data: { status: "UP" } }));
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/kho", khoRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api", notFound);
-
-// ------------------ STATIC FRONTEND ------------------
-app.use("/css", express.static(path.join(frontendRoot, "css")));
-app.use("/js", express.static(path.join(frontendRoot, "js")));
-app.use("/Asset", express.static(path.join(frontendRoot, "Asset")));
-
-// Serve uploads
-app.use("/uploads", express.static(path.join(frontendRoot, "Asset")));
-
-app.use(createPageRouter(frontendRoot));
-app.use((req, res) =>
-  res.status(404).sendFile(path.join(frontendRoot, "html", "404.html")),
-);
-app.use(errorHandler);
+import { pathToFileURL } from "node:url";
+import { once } from "node:events";
+import app from "./app.js";
+import db from "./config/db.js";
+import { startPaymentExpiration } from "./jobs/payment-expiration.js";
 
 export default app;
 
-// ------------------ START SERVER ------------------
-if (process.env.NODE_ENV !== "test") {
-  const PORT = process.env.PORT || 3000;
-  const expirePayments = () =>
-    expirePendingMomoPayments().catch((error) =>
-      console.error("MoMo payment expiration failed:", error),
-    );
-  expirePayments();
-  setInterval(expirePayments, 30_000).unref();
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Frontend: http://localhost:${PORT}`);
-    console.log(`API:      http://localhost:${PORT}/api/products`);
+export async function startServer({ port = process.env.PORT || 3000 } = {}) {
+  const server = app.listen(port);
+  await once(server, "listening");
+  const worker = startPaymentExpiration();
+  let shutdownPromise;
+
+  const shutdown = () => {
+    if (shutdownPromise) return shutdownPromise;
+    const deadline = setTimeout(() => process.exit(1), 10_000);
+    deadline.unref();
+    shutdownPromise = (async () => {
+      try {
+        await Promise.all([
+          worker.stop(),
+          new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+            server.closeIdleConnections();
+          }),
+        ]);
+        await db.promise().end();
+      } finally {
+        clearTimeout(deadline);
+        process.off("SIGINT", onSignal);
+        process.off("SIGTERM", onSignal);
+      }
+    })();
+    return shutdownPromise;
+  };
+  const onSignal = () => shutdown().catch((error) => {
+    console.error("Shutdown failed:", error.code || error.message);
+    process.exit(1);
   });
+  process.once("SIGINT", onSignal);
+  process.once("SIGTERM", onSignal);
+  return { server, shutdown };
 }
 
-// tắt bằng terminal:  taskkill /F /IM node.exe
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startServer().then(({ server }) => {
+    console.log(`Server is running on port ${server.address().port}`);
+    process.send?.({ type: "ready", port: server.address().port });
+  }).catch((error) => {
+    console.error("Server startup failed:", error.code || error.message);
+    process.exitCode = 1;
+  });
+}

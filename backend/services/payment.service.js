@@ -3,7 +3,7 @@ import db from "../config/db.js";
 import { ORDER_STATUS } from "../domain/order-status.js";
 import { orderRepository } from "../repositories/order.repository.js";
 import { paymentRepository } from "../repositories/payment.repository.js";
-import { createMomoPaymentLink } from "./momo.service.js";
+import { createMomoPaymentLink, validateMomoPayUrl } from "./momo.service.js";
 import { withTransaction } from "../utils/transaction.js";
 import { AppError } from "../utils/app-error.js";
 
@@ -137,7 +137,7 @@ export const createMomoPaymentForOrder = async (
   });
 
   if (payment.payUrl) {
-    return { maDonHang: payment.orderId, payUrl: payment.payUrl };
+    return { maDonHang: payment.orderId, payUrl: validateMomoPayUrl(payment.payUrl) };
   }
 
   const response = await makePaymentLink({
@@ -149,8 +149,23 @@ export const createMomoPaymentForOrder = async (
   if (Number(response?.resultCode) !== 0 || typeof response?.payUrl !== "string") {
     throw new AppError(502, "MOMO_LINK_FAILED", "MoMo did not return a payment URL");
   }
-  await repository.savePaymentUrl(executor, payment.transactionId, response.payUrl);
-  return { maDonHang: payment.orderId, payUrl: response.payUrl };
+  let payUrl;
+  try { payUrl = validateMomoPayUrl(response.payUrl); } catch {
+    throw new AppError(502, "MOMO_LINK_FAILED", "MoMo returned an invalid payment URL");
+  }
+  await transaction(async (connection) => {
+    const order = await repository.lockOrder(connection, payment.orderId);
+    const record = await repository.lockTransaction(connection, payment.transactionId);
+    if (!order || !record || record.status !== "PENDING") {
+      throw new AppError(409, "PAYMENT_NOT_PENDING", "Payment attempt is no longer active");
+    }
+    assertMomoOrderCanBePaid(order);
+    if (new Date(order.payment_expires_at).getTime() <= now().getTime()) {
+      throw new AppError(409, "PAYMENT_EXPIRED", "Payment window has expired");
+    }
+    await repository.savePaymentUrl(connection, payment.transactionId, payUrl);
+  });
+  return { maDonHang: payment.orderId, payUrl };
 };
 
 export const processMomoIpn = async (

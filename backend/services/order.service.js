@@ -1,4 +1,5 @@
 import { AppError } from "../utils/app-error.js";
+import { createHash } from "node:crypto";
 import db from "../config/db.js";
 import { withTransaction } from "../utils/transaction.js";
 import { orderRepository } from "../repositories/order.repository.js";
@@ -57,6 +58,14 @@ export const createOrder = async (
 ) => {
   const items = prepareItems(input.items);
   const paymentMethodId = Number(input.maPTTT);
+  const key = input.idempotencyKey;
+  if (key !== undefined && (typeof key !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(key))) {
+    throw new AppError(400, "VALIDATION_ERROR", "Invalid checkout idempotency key");
+  }
+  const requestHash = key === undefined ? null : createHash("sha256").update(JSON.stringify({
+    items, paymentMethodId, tenNguoiNhan: input.tenNguoiNhan, sdt: input.sdt,
+    diaChiGiaoHang: input.diaChiGiaoHang, ghiChu: input.ghiChu || null,
+  })).digest("hex");
 
   if (!Number.isSafeInteger(paymentMethodId) || paymentMethodId < 1) {
     throw new AppError(
@@ -67,6 +76,19 @@ export const createOrder = async (
   }
 
   return transaction(async (connection) => {
+    if (key !== undefined) {
+      if (!await repository.lockCheckoutUser(connection, input.userId)) {
+        throw new AppError(401, "USER_NOT_FOUND", "Checkout user no longer exists");
+      }
+      const existing = await repository.findCheckoutRequest(connection, input.userId, key);
+      if (existing) {
+        if (existing.request_hash !== requestHash) {
+          throw new AppError(409, "IDEMPOTENCY_CONFLICT", "Checkout key was used for different order details");
+        }
+        return { maDonHang: existing.maDonHang, tongTien: Number(existing.tongTien),
+          trangThai: existing.trangThai, paymentStatus: existing.paymentStatus };
+      }
+    }
     const paymentMethod = await repository.findPaymentMethod(
       connection,
       paymentMethodId,
@@ -154,6 +176,10 @@ export const createOrder = async (
       reason: "ORDER_CREATED",
     });
 
+    if (key !== undefined) {
+      await repository.insertCheckoutRequest(connection, input.userId, key, requestHash, orderId);
+    }
+
     return {
       maDonHang: orderId,
       tongTien: total,
@@ -162,6 +188,8 @@ export const createOrder = async (
     };
   });
 };
+
+export const getPaymentMethods = async () => orderRepository.getPaymentMethods(db.promise());
 
 const restoreOrderStock = async (connection, orderId, repository) => {
   const items = await repository.getOrderItems(connection, orderId);

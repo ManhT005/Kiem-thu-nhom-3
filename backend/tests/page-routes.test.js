@@ -2,7 +2,7 @@ import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import jwt from "jsonwebtoken";
-import app from "../server.js";
+import app from "../app.js";
 import { SECRET_KEY } from "../config/config.js";
 
 let server;
@@ -14,8 +14,11 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${server.address().port}`;
 });
 
-after(() => {
-  server.close();
+after(async () => {
+  await new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+    server.closeIdleConnections();
+  });
 });
 
 test("canonical page routes serve their page shells", async () => {
@@ -63,6 +66,9 @@ test("legacy page URLs redirect and private HTML is not served directly", async 
     ["/html/productDetail.html?id=17", "/products/17"],
     ["/html/orders.html", "/orders"],
     ["/pages/search.html?keyword=ao", "/search?keyword=ao"],
+    ["/html/orderSuccess.html?maDonHang=42&resultCode=0", "/order-success?maDonHang=42&resultCode=0"],
+    ["/html/productDetail.html?id=17&source=search", "/products/17?source=search"],
+    ["/html/login.html?next=%2Fcart", "/login?next=%2Fcart"],
   ]) {
     const response = await fetch(`${baseUrl}${route}`, { redirect: "manual" });
     assert.equal(response.status, 301, route);
@@ -72,6 +78,18 @@ test("legacy page URLs redirect and private HTML is not served directly", async 
   const response = await fetch(`${baseUrl}/html/unknown.html`);
   assert.equal(response.status, 404);
   assert.match(await response.text(), /Không tìm thấy trang/);
+});
+
+test("unknown APIs return JSON; invalid products and traversal never serve private files", async () => {
+  const response = await fetch(`${baseUrl}/api/unknown`);
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get("content-type"), /application\/json/);
+  assert.equal((await response.json()).success, false);
+  for (const route of ["/products/no-id", "/js/%2e%2e%2f%2e%2e%2fbackend%2fserver.js", "/.env", "/backend/server.js"]) {
+    assert.equal((await fetch(`${baseUrl}${route}`)).status, 404, route);
+  }
+  const search = await fetch(`${baseUrl}/pages/search.html?keyword=%C3%A1o%20%C4%91%E1%BB%8F`, { redirect: "manual" });
+  assert.equal(search.headers.get("location"), "/search?keyword=%C3%A1o%20%C4%91%E1%BB%8F");
 });
 
 test("assets remain public and unknown paths return the page 404", async () => {
@@ -85,7 +103,7 @@ test("assets remain public and unknown paths return the page 404", async () => {
   assert.match(await missingResponse.text(), /Không tìm thấy trang/);
 });
 
-test("MoMo IPN endpoint rejects invalid signatures and acknowledges valid callbacks", async () => {
+test("MoMo IPN endpoint rejects invalid signatures", async () => {
   const invalidResponse = await fetch(`${baseUrl}/api/payments/momo/ipn`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

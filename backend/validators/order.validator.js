@@ -2,6 +2,8 @@ import { body, param, query } from "express-validator";
 import { ORDER_STATUS_VALUES } from "../domain/order-status.js";
 
 export const createOrderValidation = [
+  body("idempotencyKey").optional().isString().matches(/^[A-Za-z0-9_-]{8,64}$/)
+    .withMessage("idempotencyKey must be 8-64 letters, digits, underscores or hyphens"),
   body("tenNguoiNhan")
     .trim()
     .isLength({ min: 1, max: 100 })

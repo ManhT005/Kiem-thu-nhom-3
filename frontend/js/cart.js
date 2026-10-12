@@ -198,7 +198,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      localStorage.setItem("checkoutItems", JSON.stringify(selectedItems));
+      const nextItems = JSON.stringify(selectedItems);
+      if (localStorage.getItem("checkoutItems") !== nextItems) {
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        if (user?.id) localStorage.removeItem(`checkoutSession:${user.id}`);
+        localStorage.removeItem("pendingMomoOrderId");
+      }
+      localStorage.setItem("checkoutItems", nextItems);
       window.location.href = "/checkout";
     });
   }

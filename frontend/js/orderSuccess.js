@@ -8,6 +8,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const refundView = document.getElementById("refund-view");
   const checkButton = document.getElementById("check-payment-button");
   let retryTimer;
+  let checking = false;
+  const clearCheckoutSession = (clearItems = false) => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (user?.id) {
+      const key = `checkoutSession:${user.id}`;
+      let session;
+      try { session = JSON.parse(localStorage.getItem(key)); } catch {}
+      if (String(session?.orderId) === String(orderId)) {
+        localStorage.removeItem(key);
+        if (clearItems) localStorage.removeItem("checkoutItems");
+      }
+    }
+    localStorage.removeItem("pendingMomoOrderId");
+  };
 
   const show = (view) => {
     [successView, failView, pendingView, refundView].forEach((element) => {
@@ -22,12 +36,15 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const checkPaymentStatus = async () => {
+    if (checking) return;
     if (!orderId || !token) {
       showFailure("Không thể xác minh giao dịch. Vui lòng đăng nhập và kiểm tra đơn hàng.");
       return;
     }
 
     show(pendingView);
+    checking = true;
+    checkButton.disabled = true;
     try {
       const response = await fetch(
         `/api/payments/momo/orders/${encodeURIComponent(orderId)}/status`,
@@ -42,13 +59,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const paymentStatus = result.data.paymentStatus;
       if (paymentStatus === "PAID") {
         show(successView);
-        localStorage.removeItem("checkoutItems");
-        localStorage.removeItem("pendingMomoOrderId");
+        clearCheckoutSession(true);
         return;
       }
       if (paymentStatus === "REFUND_REQUIRED") {
         show(refundView);
-        localStorage.removeItem("pendingMomoOrderId");
+        clearCheckoutSession();
         return;
       }
       if (paymentStatus === "FAILED" || paymentStatus === "EXPIRED" || paymentStatus === "CANCELLED") {
@@ -57,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ? "Thời hạn thanh toán đã hết. Đơn hàng đã hủy; giỏ hàng vẫn được giữ."
             : "Giao dịch không thành công. Giỏ hàng vẫn được giữ để bạn thử lại.",
         );
-        localStorage.removeItem("pendingMomoOrderId");
+        clearCheckoutSession();
         return;
       }
 
@@ -69,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("pending-message").textContent =
         "Chưa kết nối được máy chủ. Trang sẽ thử kiểm tra lại.";
       retryTimer = window.setTimeout(checkPaymentStatus, 5000);
+    } finally {
+      checking = false;
+      checkButton.disabled = false;
     }
   };
 
@@ -77,4 +96,5 @@ document.addEventListener("DOMContentLoaded", () => {
     checkPaymentStatus();
   });
   checkPaymentStatus();
+  window.addEventListener("pagehide", () => window.clearTimeout(retryTimer));
 });

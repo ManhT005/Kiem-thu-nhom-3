@@ -4,3 +4,5 @@ backend/.env
 *.local.sql
 *.dump.sql
 database/local/
+test-results/
+playwright-report/

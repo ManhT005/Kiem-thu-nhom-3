@@ -7,6 +7,7 @@ on:
 jobs:
   order-integrity:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       mysql:
         image: mysql:8.0
@@ -41,18 +42,23 @@ jobs:
             backend/package-lock.json
       - run: npm ci
       - run: npm --prefix backend ci
+      - run: npm run check
+      - run: npm run test:backend
+        timeout-minutes: 3
       - run: npm run db:reset
       - run: npm run db:seed:phase2
-      - run: npm run test:backend
       - run: npm run test:integration
-      - name: Start API
-        run: |
-          npm --prefix backend start > server.log 2>&1 &
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://localhost:3000/api/health > /dev/null; then
-              break
-            fi
-            sleep 1
-          done
-          curl --fail --silent http://localhost:3000/api/health > /dev/null
-      - run: npm run test:api
+        timeout-minutes: 6
+      - run: npm run db:seed:phase2
+      - name: API regression with health check and cleanup
+        run: npm run test:api:managed
+        timeout-minutes: 4
+      - run: npx playwright install --with-deps chromium
+        timeout-minutes: 3
+      - run: npm run test:browser
+        timeout-minutes: 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase2-test-evidence
+          path: test-results/

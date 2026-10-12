@@ -106,6 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn?.addEventListener("click", () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("checkoutSession:")) localStorage.removeItem(key);
+    }
+    localStorage.removeItem("checkoutItems");
+    localStorage.removeItem("pendingMomoOrderId");
     localStorage.removeItem("cart");
     alert("Đã đăng xuất!");
     window.location.href = "/login";

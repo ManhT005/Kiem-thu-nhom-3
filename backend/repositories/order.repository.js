@@ -49,6 +49,31 @@ const buildOrderFilters = (filters) => {
 };
 
 export const orderRepository = {
+  async lockCheckoutUser(connection, userId) {
+    const [rows] = await connection.execute("SELECT id FROM users WHERE id = ? FOR UPDATE", [userId]);
+    return rows[0] ?? null;
+  },
+
+  async findCheckoutRequest(connection, userId, key) {
+    const [rows] = await connection.execute(
+      `SELECT r.request_hash, d.maDonHang, d.tongTien, d.trangThai, d.payment_status AS paymentStatus
+       FROM OrderCheckoutRequest r JOIN DonHang d ON d.maDonHang = r.order_id
+       WHERE r.user_id = ? AND r.idempotency_key = ? FOR UPDATE`, [userId, key]);
+    return rows[0] ?? null;
+  },
+
+  async insertCheckoutRequest(connection, userId, key, hash, orderId) {
+    await connection.execute(
+      `INSERT INTO OrderCheckoutRequest (user_id, idempotency_key, request_hash, order_id)
+       VALUES (?, ?, ?, ?)`, [userId, key, hash, orderId]);
+  },
+
+  async getPaymentMethods(executor) {
+    const [rows] = await executor.execute("SELECT maPTTT, tenPTTT FROM phuongThucThanhToan ORDER BY maPTTT");
+    return rows.map((row) => ({ ...row, code: row.tenPTTT === "MOMO" ? "MOMO" :
+      /COD|khi nhận/i.test(row.tenPTTT) ? "COD" : "BANK_TRANSFER" }));
+  },
+
   async findPaymentMethod(connection, paymentMethodId) {
     const [rows] = await connection.execute(
       "SELECT maPTTT, tenPTTT FROM phuongThucThanhToan WHERE maPTTT = ?",

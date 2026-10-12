@@ -106,6 +106,9 @@ export const paymentRepository = {
   },
 
   async findExpiredTransactions(executor, limit = 100) {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) {
+      throw new RangeError("Expiration limit must be an integer from 1 to 500");
+    }
     const [rows] = await executor.execute(
       `SELECT d.maDonHang, MAX(t.id) AS id
        FROM DonHang d
@@ -113,10 +116,9 @@ export const paymentRepository = {
          ON t.maDonHang = d.maDonHang AND t.status = 'PENDING'
        WHERE d.payment_status = 'PENDING'
          AND d.payment_expires_at <= NOW()
-       GROUP BY d.maDonHang
+       GROUP BY d.maDonHang, d.payment_expires_at
        ORDER BY d.payment_expires_at, d.maDonHang
-       LIMIT ?`,
-      [limit],
+       LIMIT ${limit}`,
     );
     return rows;
   },
