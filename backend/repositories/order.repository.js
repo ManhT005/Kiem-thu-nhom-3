@@ -1,3 +1,5 @@
+import { applyMovement } from "../services/inventory.service.js";
+
 const ORDER_ROWS_SELECT = `
   SELECT
     d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.payment_status,
@@ -87,7 +89,7 @@ export const orderRepository = {
       `SELECT sp.maSP, sp.gia, ct.maSize, ct.soLuongTon
        FROM SanPham sp
        JOIN ChiTietSanPham ct ON ct.maSP = sp.maSP
-       WHERE sp.maSP = ? AND ct.maSize = ?
+       WHERE sp.maSP = ? AND ct.maSize = ? AND ct.is_active = 1
        FOR UPDATE`,
       [productId, sizeId],
     );
@@ -126,14 +128,13 @@ export const orderRepository = {
     );
   },
 
-  async reduceStock(connection, item) {
-    const [result] = await connection.execute(
-      `UPDATE ChiTietSanPham
-       SET soLuongTon = soLuongTon - ?
-       WHERE maSP = ? AND maSize = ? AND soLuongTon >= ?`,
-      [item.soLuongMua, item.maSP, item.maSize, item.soLuongMua],
-    );
-    return result.affectedRows;
+  async reduceStock(connection, item, context) {
+    await applyMovement(connection, {
+      maSP: item.maSP, maSize: item.maSize, delta: -item.soLuongMua,
+      eventType: "ORDER", referenceType: "ORDER", referenceId: context.orderId,
+      actorId: context.actorId, reason: "ORDER_CREATED",
+    });
+    return 1;
   },
 
   async lockCart(connection, userId) {
@@ -186,14 +187,13 @@ export const orderRepository = {
     return rows;
   },
 
-  async restoreStock(connection, item) {
-    const [result] = await connection.execute(
-      `UPDATE ChiTietSanPham
-       SET soLuongTon = soLuongTon + ?
-       WHERE maSP = ? AND maSize = ?`,
-      [item.soLuongMua, item.maSP, item.maSize],
-    );
-    return result.affectedRows;
+  async restoreStock(connection, item, context) {
+    await applyMovement(connection, {
+      maSP: item.maSP, maSize: item.maSize, delta: item.soLuongMua,
+      eventType: "CANCEL", referenceType: "ORDER", referenceId: context.orderId,
+      actorId: context.actorId, reason: context.reason || "ORDER_CANCELLED",
+    });
+    return 1;
   },
 
   async updateOrderStatus(connection, orderId, status) {

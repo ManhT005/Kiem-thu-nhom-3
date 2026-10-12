@@ -5,6 +5,8 @@
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
     "db:reset": "npm --prefix backend run db:reset",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:migrate:status": "npm --prefix backend run db:migrate:status",
     "db:seed": "npm --prefix backend run db:seed",
     "db:seed:phase2": "npm --prefix backend run db:seed:phase2",
     "test:backend": "npm --prefix backend test",

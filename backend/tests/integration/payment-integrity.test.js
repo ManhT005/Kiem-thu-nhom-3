@@ -29,7 +29,10 @@ after(async () => {
       await pool.execute("DELETE FROM DonHang WHERE id IN (?, ?)", [userId, otherUserId]);
       await pool.execute("DELETE FROM users WHERE id IN (?, ?)", [userId, otherUserId]);
     }
-    for (const id of products) await pool.execute("DELETE FROM SanPham WHERE maSP = ?", [id]);
+    for (const id of products) {
+      await pool.execute("DELETE FROM InventoryMovement WHERE maSP = ?", [id]);
+      await pool.execute("DELETE FROM SanPham WHERE maSP = ?", [id]);
+    }
     if (methodId) await pool.execute("DELETE FROM phuongThucThanhToan WHERE maPTTT = ?", [methodId]);
   } finally { await pool.end(); }
 });

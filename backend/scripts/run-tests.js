@@ -12,6 +12,7 @@ const files = suite === "routes" ? ["page-routes.test.js", "frontend-asset-url.t
   (await readdir(folder)).filter((name) => name.endsWith(".test.js")).sort();
 await mkdir("../test-results", { recursive: true });
 const result = spawnSync(process.execPath, ["--test", "--test-timeout=60000",
+  ...(suite === "integration" ? ["--test-concurrency=1"] : []),
   "--test-reporter=tap", "--test-reporter-destination=stdout",
   "--test-reporter=junit", `--test-reporter-destination=../test-results/${suite}.xml`,
   ...files.map((file) => `${folder}/${file}`)], {

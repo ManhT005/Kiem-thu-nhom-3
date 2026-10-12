@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phiếu nhập và lịch sử kho</title><link rel="stylesheet" href="/css/operations.css"></head>
+<body><header><h1>Phiếu nhập và lịch sử kho</h1><nav><a href="/staff">Nhân viên</a><a href="/admin">Quản trị</a><a href="/">Cửa hàng</a></nav></header>
+<main>
+<p id="message" role="status" aria-live="polite"></p>
+<section><h2 id="receipt-form-title">Tạo phiếu nhập nháp</h2>
+<p>Phiếu nháp chưa thay đổi tồn kho. Kiểm tra các dòng nhập rồi ghi nhận phiếu để tăng tồn.</p>
+<form id="receipt-form"><label>Ghi chú <input name="note" maxlength="500"></label>
+<div id="receipt-items"></div><button type="button" id="add-item">Thêm dòng</button>
+<button type="submit" id="save-receipt">Lưu phiếu nháp</button><button type="button" id="new-receipt">Phiếu mới</button></form></section>
+<section><h2>Danh sách phiếu nhập</h2><label>Trạng thái <select id="receipt-status"><option value="">Tất cả</option><option value="DRAFT">Nháp</option><option value="POSTED">Đã ghi nhận</option></select></label>
+<button id="refresh-receipts" type="button">Tải lại phiếu</button>
+<div class="table-wrap"><table><thead><tr><th>Mã phiếu</th><th>Trạng thái</th><th>Tổng giá nhập</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody id="receipts"></tbody></table></div>
+<button type="button" id="receipt-prev">Trang trước</button><span id="receipt-page"></span><button type="button" id="receipt-next">Trang sau</button></section>
+<section><h2>Lịch sử biến động kho</h2><form id="movement-filters" class="filters">
+<label>Sản phẩm <select id="movement-product"><option value="">Tất cả</option></select></label>
+<label>Nghiệp vụ <select id="movement-event"><option value="">Tất cả</option><option value="OPENING">Tồn đầu</option><option value="RECEIPT">Nhập kho</option><option value="ORDER">Đặt hàng</option><option value="CANCEL">Hủy đơn</option><option value="ADJUSTMENT">Điều chỉnh</option></select></label>
+<label>Từ ngày <input type="date" id="movement-from"></label><label>Đến ngày <input type="date" id="movement-to"></label><button type="submit">Lọc lịch sử</button></form>
+<div class="table-wrap"><table><thead><tr><th>Sản phẩm / size</th><th>Nghiệp vụ</th><th>Thay đổi</th><th>Trước / sau</th><th>Chứng từ</th><th>Lý do</th></tr></thead><tbody id="movements"></tbody></table></div>
+<button type="button" id="movement-prev">Trang trước</button><span id="movement-page"></span><button type="button" id="movement-next">Trang sau</button></section>
+<section><h2>Sản phẩm sắp hết</h2><form id="low-stock-form"><label>Ngưỡng tồn kho <input id="threshold" type="number" min="0" max="2147483647" value="5" required></label><button type="submit">Kiểm tra</button></form>
+<div class="table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Size</th><th>Tồn kho</th></tr></thead><tbody id="low-stock"></tbody></table></div></section>
+<section id="adjustment-section" hidden><h2>Điều chỉnh kho</h2><p>Chỉ quản trị viên được điều chỉnh. Nhập mức tăng hoặc giảm và lý do kiểm kê.</p>
+<form id="adjustment-form"><div id="adjustment-item"></div><label>Lý do <input name="reason" required maxlength="500"></label><button type="submit">Ghi nhận điều chỉnh</button></form>
+<button id="reconcile" type="button">Đối soát tồn kho với lịch sử</button>
+<div class="table-wrap"><table><thead><tr><th>Sản phẩm / size</th><th>Tồn hiện tại</th><th>Theo lịch sử</th><th>Chênh lệch</th></tr></thead><tbody id="reconciliation"></tbody></table></div></section>
+</main><script src="/js/inventory.js"></script></body></html>

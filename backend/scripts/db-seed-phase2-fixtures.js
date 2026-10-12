@@ -58,6 +58,7 @@ try {
   }
 
   for (const [id, name, price, stock] of products) {
+    await connection.execute("DELETE FROM InventoryMovement WHERE maSP = ?", [id]);
     await connection.execute(
       `INSERT INTO SanPham (maSP, tenSP, gia, moTa, anhSP)
        VALUES (?, ?, ?, 'Phase 2 test fixture', NULL)
@@ -68,8 +69,14 @@ try {
     await connection.execute(
       `INSERT INTO ChiTietSanPham (maSP, maSize, soLuongTon)
        VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE soLuongTon = VALUES(soLuongTon)`,
+       ON DUPLICATE KEY UPDATE soLuongTon = VALUES(soLuongTon), is_active = 1`,
       [id, sizeId, stock],
+    );
+    await connection.execute(
+      `INSERT INTO InventoryMovement (maSP, maSize, event_type, reference_type, reference_id,
+        delta, quantity_before, quantity_after, reason)
+       VALUES (?, ?, 'OPENING', 'OPENING', ?, ?, 0, ?, 'TEST_FIXTURE_OPENING')`,
+      [id, sizeId, `${id}:${sizeId}`, stock, stock],
     );
   }
   await connection.commit();

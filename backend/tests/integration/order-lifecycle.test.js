@@ -135,6 +135,7 @@ test(
         await pool.execute("DELETE FROM users WHERE id = ?", [staffId]);
       }
       if (productId) {
+        await pool.execute("DELETE FROM InventoryMovement WHERE maSP = ?", [productId]);
         await pool.execute("DELETE FROM SanPham WHERE maSP = ?", [productId]);
       }
     }
@@ -237,6 +238,7 @@ test(
         await pool.execute("DELETE FROM users WHERE id = ?", [userId]);
       }
       if (productId) {
+        await pool.execute("DELETE FROM InventoryMovement WHERE maSP = ?", [productId]);
         await pool.execute("DELETE FROM SanPham WHERE maSP = ?", [productId]);
       }
     }

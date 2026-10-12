@@ -17,6 +17,7 @@ import { errorHandler } from "./middleware/error.middleware.js";
 import { responseContract } from "./middleware/response-contract.middleware.js";
 import { createPageRouter } from "./routes/page.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
 const app = express();
 
 app.use(
@@ -43,6 +44,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/inventory", inventoryRoutes);
 app.use("/api", notFound);
 
 // ------------------ STATIC FRONTEND ------------------
