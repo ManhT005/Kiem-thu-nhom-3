@@ -1,4 +1,4 @@
-name: Phase 2 Order Integrity
+name: Phase 2-3 Commerce Integrity
 
 on:
   pull_request:
@@ -60,5 +60,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: phase2-test-evidence
+          name: commerce-test-evidence
           path: test-results/

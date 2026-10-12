@@ -23,13 +23,19 @@ const { mkdirSync, openSync, closeSync } = require("node:fs");
     const baseUrl = `http://127.0.0.1:${port}`;
     const health = await fetch(`${baseUrl}/api/health`, { signal: AbortSignal.timeout(1000) });
     if (!health.ok) throw new Error("API failed health check");
-    const runner = spawn(process.execPath, ["node_modules/newman/bin/newman.js", "run",
-      "tests/postman/ClothesShop.postman_collection.json", "-e", "tests/postman/local.postman_environment.json",
-      "--env-var", `baseUrl=${baseUrl}`,
-      "--reporters", "cli,json,htmlextra", "--reporter-json-export", "test-results/newman.json",
-      "--reporter-htmlextra-export", "test-results/newman.html", "--timeout", "120000"], { stdio: "inherit" });
-    const [code] = await once(runner, "exit");
-    process.exitCode = code ?? 1;
+    const { existsSync } = require("node:fs");
+    const suites = [
+      ["ClothesShop", "newman"], ["Phase3", "newman-phase3"], ["Phase4", "newman-phase4"],
+    ].filter(([name]) => existsSync(`tests/postman/${name}.postman_collection.json`));
+    for (const [name, artifact] of suites) {
+      const runner = spawn(process.execPath, ["node_modules/newman/bin/newman.js", "run",
+        `tests/postman/${name}.postman_collection.json`, "-e", "tests/postman/local.postman_environment.json",
+        "--env-var", `baseUrl=${baseUrl}`,
+        "--reporters", "cli,json,htmlextra", "--reporter-json-export", `test-results/${artifact}.json`,
+        "--reporter-htmlextra-export", `test-results/${artifact}.html`, "--timeout", "120000"], { stdio: "inherit" });
+      const [code] = await once(runner, "exit");
+      if (code !== 0) { process.exitCode = code ?? 1; break; }
+    }
   } finally {
     api.kill("SIGTERM");
     const timer = setTimeout(() => api.kill("SIGKILL"), 10_000);

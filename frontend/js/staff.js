@@ -134,74 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function attachEditEvents() {
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const sp = e.target.productData;
-        currentEditingProductId = sp.maSP;
-        const modal = document.getElementById("editModal");
-        const container = document.getElementById("sizeInputsContainer");
-        document.getElementById("modalTitle").innerText =
-          `Cập nhật: ${sp.tenSP}`;
-
-        container.replaceChildren();
-        if (sp.sizes) {
-          sp.sizes.forEach((s) => {
-            const sizeId = Number(s.maSize);
-            if (!Number.isSafeInteger(sizeId) || sizeId < 1) return;
-            const row = document.createElement("div");
-            row.className = "input-group-row";
-            const label = document.createElement("label");
-            label.textContent = `Size ${String(s.tenSize ?? "")}`;
-            const input = document.createElement("input");
-            input.type = "number";
-            input.className = "qty-input";
-            input.dataset.sizeId = String(sizeId);
-            input.value = String(Number(s.soLuongTon) || 0);
-            input.min = "0";
-            row.append(label, input);
-            container.appendChild(row);
-          });
-        }
-        modal.style.display = "block";
-      });
+    document.querySelectorAll(".edit-btn").forEach((button) => {
+      button.textContent = "Phiếu nhập / điều chỉnh";
+      button.addEventListener("click", () => { window.location.href = "/inventory"; });
     });
   }
-
-  const saveBtn = document.getElementById("saveEditBtn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async () => {
-      const inputs = document.querySelectorAll(
-        "#sizeInputsContainer .qty-input",
-      );
-      const inventoryUpdate = Array.from(inputs).map((inp) => ({
-        maSize: parseInt(inp.dataset.sizeId),
-        soLuong: parseInt(inp.value) || 0,
-      }));
-
-      try {
-        const res = await fetch(`/api/kho/${currentEditingProductId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ inventory: inventoryUpdate }),
-        });
-        if (res.ok) {
-          alert("Cập nhật thành công!");
-          document.getElementById("editModal").style.display = "none";
-          renderKho();
-        } else {
-          alert("Lỗi cập nhật");
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    });
-  }
-
-  document.getElementById("closeModal").onclick = () =>
-    (document.getElementById("editModal").style.display = "none");
   const searchBtn = document.getElementById("searchBtn");
   if (searchBtn) searchBtn.onclick = () => renderKho();
 

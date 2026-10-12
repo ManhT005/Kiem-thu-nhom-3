@@ -1,0 +1,491 @@
+{
+  "info": {
+    "name": "Phase 3 Inventory Integrity",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login user",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-user-a@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('userToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login staff",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-staff@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('staffToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login admin",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-admin@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('adminToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory requires authentication",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "User cannot receive goods",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staff cannot adjust stock",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/adjustments",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock before receipt",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/93004",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('beforeStock',pm.response.json().data.product.sizes.find(s=>s.maSize===92901).soLuongTon);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create draft receipt",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"note\":\"Newman Phase 3 receipt\",\"items\":[{\"maSP\":93004,\"maSize\":92901,\"soLuongNhap\":2,\"donGiaNhap\":\"0.01\"}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "const receipt=pm.response.json().data; pm.collectionVariables.set('receiptId',receipt.maPhieuNhap); pm.test('Draft and exact cost',()=>{pm.expect(receipt.status).to.eql('DRAFT');pm.expect(Number(receipt.total_amount)).to.eql(0.02);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Draft does not change stock",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/93004",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No stock change',()=>pm.expect(pm.response.json().data.product.sizes.find(s=>s.maSize===92901).soLuongTon).to.eql(Number(pm.collectionVariables.get('beforeStock'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Post receipt",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/receipts/{{receiptId}}/post",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Posted once',()=>{pm.expect(pm.response.json().data.status).to.eql('POSTED');pm.expect(pm.response.json().data.duplicate).to.eql(false);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Duplicate post is idempotent",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/receipts/{{receiptId}}/post",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Duplicate',()=>pm.expect(pm.response.json().data.duplicate).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posted receipt cannot edit",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/inventory/receipts/{{receiptId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"items\":[{\"maSP\":93004,\"maSize\":92901,\"soLuongNhap\":3,\"donGiaNhap\":0}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+              "pm.test('Immutable',()=>pm.expect(pm.response.json().code).to.eql('RECEIPT_IMMUTABLE'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Receipt only increased stock once",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/products/93004",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Stock +2',()=>pm.expect(pm.response.json().data.product.sizes.find(s=>s.maSize===92901).soLuongTon).to.eql(Number(pm.collectionVariables.get('beforeStock'))+2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Receipt ledger",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/movements?maSP=93004&eventType=RECEIPT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('One receipt movement',()=>{pm.expect(pm.response.json().data.items).to.have.lengthOf(1);pm.expect(pm.response.json().data.items[0].delta).to.eql(2);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staff cannot reconcile",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/reconciliation",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin reconciliation matches",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/reconciliation?maSP=93004&maSize=92901",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No difference',()=>pm.expect(pm.response.json().data.items[0].difference).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invalid receipt rejected",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"items\":[{\"maSP\":93004,\"maSize\":92901,\"soLuongNhap\":0,\"donGiaNhap\":-1}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy absolute stock setter is closed",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/kho/93004",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"inventory\":[{\"maSize\":92901,\"soLuong\":99}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+              "pm.test('Use documented adjustment',()=>pm.expect(pm.response.json().code).to.eql('INVENTORY_ADJUSTMENT_REQUIRED'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

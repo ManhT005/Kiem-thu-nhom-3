@@ -47,7 +47,7 @@ const markOrderCancelled = async (
   if (order.trangThai === ORDER_STATUS.CANCELLED) return;
   const items = await repository.getOrderItems(connection, order.maDonHang);
   for (const item of items) {
-    const affectedRows = await repository.restoreStock(connection, item);
+    const affectedRows = await repository.restoreStock(connection, item, { orderId: order.maDonHang, actorId: null, reason });
     if (affectedRows !== 1) {
       throw new AppError(409, "STOCK_RESTORE_FAILED", "Unable to restore stock");
     }

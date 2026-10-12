@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
+import { applyMigrations } from "./migration-runner.js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, "../..");
@@ -37,32 +38,13 @@ try {
   );
   await connection.query(`USE \`${databaseName.replaceAll("`", "``")}\``);
 
-  const migration = await fs.readFile(
-    fileFromRepository("database", "migrations", "001_initial_schema.sql"),
-    "utf8",
-  );
-  const orderMigration = await fs.readFile(
-    fileFromRepository("database", "migrations", "002_order_integrity.sql"),
-    "utf8",
-  );
-  const paymentMigration = await fs.readFile(
-    fileFromRepository(
-      "database",
-      "migrations",
-      "003_momo_payment_transactions.sql",
-    ),
-    "utf8",
-  );
+  await connection.query("SET time_zone = '+00:00'");
+  await applyMigrations(connection);
   const seed = await fs.readFile(
     fileFromRepository("database", "seeds", "001_reference_data.sql"),
     "utf8",
   );
-  const checkoutMigration = await fs.readFile(
-    fileFromRepository("database", "migrations", "004_checkout_idempotency.sql"), "utf8",
-  );
-  await connection.query(
-    `${migration}\n${orderMigration}\n${paymentMigration}\n${checkoutMigration}\n${seed}`,
-  );
+  await connection.query(seed);
   console.log(`Database ${databaseName} reset successfully.`);
 } finally {
   await connection.end();

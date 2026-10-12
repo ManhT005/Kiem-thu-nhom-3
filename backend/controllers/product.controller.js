@@ -1,6 +1,7 @@
 import Product from "../models/Product.js";
 import path from "path";
 import fs from "fs";
+import { saveProduct } from "../services/product-write.service.js";
 
 // ... (Giữ nguyên getProducts) ...
 export const getProducts = (req, res) => {
@@ -66,144 +67,17 @@ export const getProductCategories = (req, res) => {
 };
 
 // ====================== THÊM SẢN PHẨM (ĐÃ SỬA) ===========================
-export const createProduct = (req, res) => {
-  // Lấy thêm biến sizes từ body
-  const { tenSP, gia, moTa, categories, soLuong, sizes } = req.body;
-
-  if (!tenSP || !gia) {
-    return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
-  }
-
-  let anhSP = null;
-  if (req.file) anhSP = req.file.filename;
-
-  const newProduct = { tenSP, gia: parseInt(gia), moTa: moTa || "", anhSP };
-
-  Product.create(newProduct, (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Lỗi khi thêm sản phẩm" });
-    }
-
-    const productId = result.insertId;
-    const stockQty = parseInt(soLuong) || 0;
-
-    const saveCategoriesAndRespond = () => {
-      if (categories) {
-        let categoryIds = [];
-        try {
-          categoryIds = JSON.parse(categories);
-        } catch (e) {
-          categoryIds = [];
-        }
-        if (Array.isArray(categoryIds)) {
-          categoryIds.forEach((catId) =>
-            Product.addCategory(productId, catId, () => {}),
-          );
-        }
-      }
-      res.json({ message: "Thêm sản phẩm thành công", productId });
-    };
-
-    // --- PHẦN SỬA ĐỔI QUAN TRỌNG: XỬ LÝ SIZE ---
-    // Thay vì fix cứng [1,2,3,4,5], ta lấy từ biến sizes frontend gửi lên
-    if (sizes) {
-      let sizeArray = [];
-      try {
-        sizeArray = JSON.parse(sizes); // Chuyển chuỗi '["S", "M"]' thành mảng
-      } catch (e) {
-        sizeArray = [];
-      }
-
-      if (Array.isArray(sizeArray) && sizeArray.length > 0) {
-        // Gọi hàm Model mới để lưu vào ChiTietSanPham
-        Product.addSizeByName(productId, sizeArray, stockQty, (err) => {
-          if (err) {
-            console.error("Lỗi tạo kho size:", err);
-            return res
-              .status(500)
-              .json({ message: "Không thể lưu size và tồn kho" });
-          }
-          saveCategoriesAndRespond();
-        });
-        return;
-      }
-    }
-    // ---------------------------------------------
-    saveCategoriesAndRespond();
-  });
+export const createProduct = async (req, res, next) => {
+  try {
+    const result = await saveProduct({ ...req.body, image: req.file?.filename }, req.user.id);
+    return res.status(201).json({ message: "Thêm sản phẩm thành công", ...result });
+  } catch (error) { return next(error); }
 };
-
-// ====================== CẬP NHẬT SẢN PHẨM (ĐÃ SỬA LỖI) ===========================
-export const updateProduct = (req, res) => {
-  const { id } = req.params;
-  const { tenSP, gia, moTa, categories, oldImage, soLuong, sizes } = req.body;
-
-  // 1. Validation cơ bản
-  if (!tenSP || !gia) {
-    return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
-  }
-
-  // 2. --- KHAI BÁO BIẾN anhSP (QUAN TRỌNG: SỬA LỖI TẠI ĐÂY) ---
-  let anhSP = oldImage; // Mặc định lấy ảnh cũ
-
-  // 3. Nếu có file ảnh mới được upload lên
-  if (req.file) {
-    anhSP = req.file.filename; // Cập nhật tên ảnh mới
-
-    // Xóa ảnh cũ (nếu có và không phải là null/undefined)
-    if (oldImage && oldImage !== "null" && oldImage !== "undefined") {
-      try {
-        const oldPath = path.join(process.cwd(), "../frontend/Asset", oldImage);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      } catch (err) {
-        console.error("Không xóa được ảnh cũ:", err.message);
-      }
-    }
-  }
-
-  // 4. Tạo đối tượng update (Lúc này biến anhSP đã tồn tại nên không bị lỗi nữa)
-  const updatedProduct = { tenSP, gia: parseInt(gia), moTa: moTa || "", anhSP };
-
-  Product.update(id, updatedProduct, (err, result) => {
-    if (err) {
-      console.error("Lỗi update SP:", err);
-      return res.status(500).json({ message: "Lỗi khi cập nhật sản phẩm" });
-    }
-
-    const stockQty = parseInt(soLuong) || 0;
-
-    // --- XỬ LÝ SYNC SIZES (Giữ nguyên logic bạn đã sửa trước đó) ---
-    if (sizes) {
-      let sizeArray = [];
-      try {
-        sizeArray = JSON.parse(sizes);
-      } catch (e) {}
-
-      if (Array.isArray(sizeArray)) {
-        Product.syncSizes(id, sizeArray, stockQty, (err) => {
-          if (err) console.error("Lỗi đồng bộ size:", err);
-        });
-      }
-    }
-    // -----------------------------------------------
-
-    if (categories) {
-      let categoryIds = [];
-      try {
-        categoryIds = JSON.parse(categories);
-      } catch (e) {}
-      Product.removeAllCategories(id, (err) => {
-        if (!err && Array.isArray(categoryIds)) {
-          categoryIds.forEach((catId) =>
-            Product.addCategory(id, catId, () => {}),
-          );
-        }
-      });
-    }
-
-    res.json({ message: "Cập nhật sản phẩm thành công" });
-  });
+export const updateProduct = async (req, res, next) => {
+  try {
+    await saveProduct({ ...req.body, image: req.file?.filename }, req.user.id, req.params.id);
+    return res.json({ message: "Cập nhật sản phẩm thành công" });
+  } catch (error) { return next(error); }
 };
 
 // ... (Giữ nguyên deleteProduct) ...
@@ -219,7 +93,7 @@ export const deleteProduct = (req, res) => {
       if (err) {
         if (err.code === "ER_ROW_IS_REFERENCED_2") {
           return res
-            .status(400)
+            .status(409)
             .json({ message: "Không thể xóa: Sản phẩm đang có đơn hàng." });
         }
         return res.status(500).json({ message: "Lỗi xóa sản phẩm" });

@@ -151,7 +151,7 @@ export const createOrder = async (
 
     for (const item of pricedItems) {
       await repository.insertOrderItem(connection, orderId, item);
-      const affectedRows = await repository.reduceStock(connection, item);
+      const affectedRows = await repository.reduceStock(connection, item, { orderId, actorId: input.userId });
       if (affectedRows !== 1) {
         throw new AppError(
           409,
@@ -191,10 +191,10 @@ export const createOrder = async (
 
 export const getPaymentMethods = async () => orderRepository.getPaymentMethods(db.promise());
 
-const restoreOrderStock = async (connection, orderId, repository) => {
+const restoreOrderStock = async (connection, orderId, repository, actorId, reason) => {
   const items = await repository.getOrderItems(connection, orderId);
   for (const item of items) {
-    const affectedRows = await repository.restoreStock(connection, item);
+    const affectedRows = await repository.restoreStock(connection, item, { orderId, actorId, reason });
     if (affectedRows !== 1) {
       throw new AppError(
         409,
@@ -263,7 +263,7 @@ const transitionOrder = async (
     }
 
     if (targetStatus === ORDER_STATUS.CANCELLED) {
-      await restoreOrderStock(connection, normalizedOrderId, repository);
+      await restoreOrderStock(connection, normalizedOrderId, repository, actorId, reason);
     }
 
     const affectedRows = await repository.updateOrderStatus(

@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".size-stock").forEach((input) => { input.readOnly = true; input.title = "Tồn kho được thay đổi bằng phiếu nhập hoặc điều chỉnh"; });
   const token = localStorage.getItem("token");
   let editingProductId = null;
 
@@ -137,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (stockInput) {
           stockInput.disabled = false;
           stockInput.value = sizeObj.soLuongTon || 0;
+          stockInput.readOnly = true;
         }
       });
     }
@@ -217,7 +219,6 @@ document.addEventListener("DOMContentLoaded", () => {
           );
           sizes.push({
             tenSize: cb.value,
-            soLuongTon: Number(stockInput?.value || 0),
           });
         });
       formData.append("sizes", JSON.stringify(sizes));

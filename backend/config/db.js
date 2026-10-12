@@ -15,6 +15,7 @@ const db = mysql.createPool({
 // DATETIME payment deadlines use UTC both in SQL NOW() and in the JS driver.
 db.on("connection", (connection) => {
   connection.query("SET time_zone = '+00:00'");
+  connection.query("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED");
 });
 
 export default db;

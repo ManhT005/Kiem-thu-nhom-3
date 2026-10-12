@@ -11,7 +11,7 @@ router.get("/", verifyToken, authorizeRoles("admin", "staff"), getKho);
 router.put(
   "/:maSP",
   verifyToken,
-  authorizeRoles("admin", "staff"),
+  authorizeRoles("admin"),
   inventoryValidation,
   validate,
   updateKho,
