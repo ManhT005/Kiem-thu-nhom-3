@@ -59,3 +59,14 @@
     text-decoration: none; /* Đảm bảo không có gạch chân */
     box-shadow: 0 2px 5px rgba(238, 77, 45, 0.3); /* Thêm chút bóng đổ cho đẹp */
 }
+
+.voucher-panel { margin-top: 20px; padding-top: 16px; border-top: 1px solid #ddd; }
+.voucher-panel > label { display: block; font-weight: 600; margin-bottom: 8px; }
+.voucher-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.voucher-controls input, .voucher-controls button { min-height: 44px; font: inherit; border-radius: 4px; padding: 10px 12px; }
+.voucher-controls input { min-width: 0; width: 100%; border: 1px solid #b7b7b7; background: white; }
+.voucher-controls button { border: 1px solid #ba1655; background: #ba1655; color: white; cursor: pointer; }
+.voucher-controls button:disabled { opacity: .6; cursor: wait; }
+.voucher-controls :focus-visible { outline: 3px solid #8d1859; outline-offset: 2px; }
+#voucherFeedback { font-size: 14px; line-height: 1.5; min-height: 22px; margin: 10px 0; }
+@media (max-width: 480px) { .voucher-controls { grid-template-columns: 1fr; } }
