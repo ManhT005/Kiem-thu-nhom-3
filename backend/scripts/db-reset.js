@@ -9,8 +9,8 @@ const repositoryRoot = path.resolve(scriptDirectory, "../..");
 const fileFromRepository = (...parts) => path.join(repositoryRoot, ...parts);
 
 const databaseName = process.env.DB_NAME || "clothes_db";
-if (!databaseName || databaseName === "mysql") {
-  throw new Error("Unsafe DB_NAME for db:reset");
+if (!/_test$/i.test(databaseName)) {
+  throw new Error("db:reset requires an explicit DB_NAME ending in _test");
 }
 
 if (
@@ -45,11 +45,24 @@ try {
     fileFromRepository("database", "migrations", "002_order_integrity.sql"),
     "utf8",
   );
+  const paymentMigration = await fs.readFile(
+    fileFromRepository(
+      "database",
+      "migrations",
+      "003_momo_payment_transactions.sql",
+    ),
+    "utf8",
+  );
   const seed = await fs.readFile(
     fileFromRepository("database", "seeds", "001_reference_data.sql"),
     "utf8",
   );
-  await connection.query(`${migration}\n${orderMigration}\n${seed}`);
+  const checkoutMigration = await fs.readFile(
+    fileFromRepository("database", "migrations", "004_checkout_idempotency.sql"), "utf8",
+  );
+  await connection.query(
+    `${migration}\n${orderMigration}\n${paymentMigration}\n${checkoutMigration}\n${seed}`,
+  );
   console.log(`Database ${databaseName} reset successfully.`);
 } finally {
   await connection.end();
