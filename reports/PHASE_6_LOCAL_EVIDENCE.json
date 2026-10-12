@@ -1,0 +1,94 @@
+{
+  "sha": "50da5371b692ba5bbe15b0fb48ba04b5d3e919ed",
+  "generatedAt": "2026-10-12T15:15:48.201Z",
+  "node": "v24.12.0",
+  "mysql": "8.0.46",
+  "database": "clothes_closure_test",
+  "layers": {
+    "unit": {
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "integration": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "browser": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "apiRequests": 163,
+  "apiAssertions": 316,
+  "endpointCoverage": {
+    "covered": 62,
+    "total": 62
+  },
+  "responseTimeMs": {
+    "p95": 136,
+    "maximum": 200,
+    "scope": "observed local/CI API smoke; no production SLO"
+  },
+  "migrations": [
+    {
+      "name": "001_initial_schema.sql",
+      "checksum": "1c96e26a711d31038f38a0085e6d212d67d9064bbf7a265cc0a3c2949f1efa7b",
+      "state": "APPLIED"
+    },
+    {
+      "name": "002_order_integrity.sql",
+      "checksum": "f6d074246b3ab6c72bec52e0373c63d5a60527c9ec600284ac86a013511af86b",
+      "state": "APPLIED"
+    },
+    {
+      "name": "003_momo_payment_transactions.sql",
+      "checksum": "259ce1673abb3d24785602154270398cda5afa3943e92819dedc69c77fbea232",
+      "state": "APPLIED"
+    },
+    {
+      "name": "004_checkout_idempotency.sql",
+      "checksum": "c674a9bf9a9b5febef94cd66e70638f3264cba7550ebfbd054c2dfc56174f5a5",
+      "state": "APPLIED"
+    },
+    {
+      "name": "005_inventory_goods_receipt.sql",
+      "checksum": "80794218b7d57a9a2a315b888ee1c43b069166c669cbdbda5cc55907a832c607",
+      "state": "APPLIED"
+    },
+    {
+      "name": "006_user_lifecycle_voucher.sql",
+      "checksum": "b2aeb8de75222735718b618c29415352d7493b7625b5d1007e7de8c9dc2cbe80",
+      "state": "APPLIED"
+    }
+  ],
+  "suiteChecksums": [
+    {
+      "name": "ClothesShop",
+      "sha256": "9c176a2a79aa577e2cbf93a57b9e7760bbb74a66e4666dab456901ce6585e6b5"
+    },
+    {
+      "name": "Phase3",
+      "sha256": "b87f6109eb40d3c6ecb9ca960f9d74f24446e0c9135c619a738720a78f4bb7da"
+    },
+    {
+      "name": "Phase4",
+      "sha256": "0c885d6a570b4a080da0d1ba3dae00f3a2e9626b885f0fd23dcc89f9a732d4b0"
+    },
+    {
+      "name": "Phase5",
+      "sha256": "4514bda813ad73b1e0588d668100a962929b49fe5bdd1a4094b3a74fe33384a9"
+    },
+    {
+      "name": "Phase6",
+      "sha256": "68e2f76800bf9d608644cc36b20a8f8f56e0ef3f5e5c5e8eca55ae8cc9ed37b3"
+    }
+  ],
+  "externalMomo": "BLOCKED_EXTERNAL",
+  "humanAcceptance": "PENDING"
+}
