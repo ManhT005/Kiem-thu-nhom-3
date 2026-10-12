@@ -7,7 +7,7 @@ async function check(folder) {
     if (item.name === "node_modules") continue;
     const file = path.join(folder, item.name);
     if (item.isDirectory()) await check(file);
-    else if (file.endsWith(".js")) {
+    else if (/\.(?:js|cjs)$/.test(file)) {
       const result = spawnSync(process.execPath, ["--check", file], { stdio: "inherit" });
       if (result.status !== 0) process.exitCode = 1;
     }
@@ -15,3 +15,6 @@ async function check(folder) {
 }
 await check(".");
 await check("../frontend/js");
+await check("../tests");
+const config = spawnSync(process.execPath,["--check","../playwright.config.cjs"],{stdio:"inherit"});
+if(config.status!==0)process.exitCode=1;

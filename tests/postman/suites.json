@@ -1,0 +1,28 @@
+[
+  {
+    "name": "ClothesShop",
+    "collection": "ClothesShop.postman_collection.json",
+    "severity": "critical"
+  },
+  {
+    "name": "Phase3",
+    "collection": "Phase3.postman_collection.json",
+    "severity": "critical"
+  },
+  {
+    "name": "Phase4",
+    "collection": "Phase4.postman_collection.json",
+    "severity": "critical"
+  },
+  {
+    "name": "Phase5",
+    "collection": "Phase5.postman_collection.json",
+    "severity": "critical",
+    "fixture": "reporting"
+  },
+  {
+    "name": "Phase6",
+    "collection": "Phase6.postman_collection.json",
+    "severity": "critical"
+  }
+]
