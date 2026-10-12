@@ -7,6 +7,7 @@ import {
   getFilteredOrders,
   getOrderHistory,
   updateOrderStatus,
+  getPaymentMethods,
 } from "../controllers/order.controller.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/authorize.middleware.js";
@@ -19,6 +20,7 @@ import {
 } from "../validators/order.validator.js";
 
 const router = express.Router();
+router.get("/payment-methods", getPaymentMethods);
 
 // POST /api/orders/create - Tạo đơn
 router.post(

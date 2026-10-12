@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         alert("Đăng ký thành công! Vui lòng đăng nhập.");
-        window.location.href = "/html/login.html";
+        window.location.href = "/login";
       } catch (error) {
         console.error(error);
         messageEl.textContent = "Lỗi server. Vui lòng thử lại";
@@ -96,6 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Xử lý nút đăng nhập
   loginBtn?.addEventListener("click", () => {
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
   });
 });
