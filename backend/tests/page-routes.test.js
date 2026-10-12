@@ -4,11 +4,14 @@ import { once } from "node:events";
 import jwt from "jsonwebtoken";
 import app from "../app.js";
 import { SECRET_KEY } from "../config/config.js";
+import { userLifecycleRepository } from "../repositories/user-lifecycle.repository.js";
+import { mock } from "node:test";
 
 let server;
 let baseUrl;
 
 before(async () => {
+  mock.method(userLifecycleRepository, "findCurrentUser", async (id) => ({ id, role: "user", status: "ACTIVE", token_version: 0 }));
   server = app.listen(0);
   await once(server, "listening");
   baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -120,7 +123,7 @@ test("MoMo payment creation requires authentication and an order id", async () =
   });
   assert.equal(unauthenticated.status, 401);
 
-  const token = jwt.sign({ id: 7, role: "user" }, SECRET_KEY);
+  const token = jwt.sign({ id: 7, role: "user", token_version: 0 }, SECRET_KEY);
   const clientAmountOnly = await fetch(`${baseUrl}/api/payments/momo/create`, {
     method: "POST",
     headers: {

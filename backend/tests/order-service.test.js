@@ -13,6 +13,7 @@ import { withTransaction } from "../utils/transaction.js";
 const makeRepository = ({ stock = 10 } = {}) => {
   const calls = [];
   const repository = {
+    async lockCheckoutUser() { return { id: 3, status: "ACTIVE", role: "user", token_version: 0 }; },
     async findPaymentMethod(_connection, paymentMethodId) {
       calls.push(["payment", paymentMethodId]);
       return { maPTTT: paymentMethodId };

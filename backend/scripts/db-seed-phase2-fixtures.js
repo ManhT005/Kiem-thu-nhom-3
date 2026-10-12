@@ -55,6 +55,8 @@ try {
          sdt = VALUES(sdt), matKhau = VALUES(matKhau), role = VALUES(role)`,
       [id, name, email, passwordHash, role],
     );
+    const [columns] = await connection.execute("SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'status'");
+    if (columns.length) await connection.execute("UPDATE users SET status = 'ACTIVE', token_version = 0 WHERE id = ?", [id]);
   }
 
   for (const [id, name, price, stock] of products) {

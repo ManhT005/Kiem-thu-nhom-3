@@ -20,6 +20,7 @@ export const createOrder = async (req, res, next) => {
     const order = await createOrderService({
       ...req.body,
       userId: req.user.id,
+      authTokenVersion: req.user.token_version,
     });
     return success(res, {
       status: 201,

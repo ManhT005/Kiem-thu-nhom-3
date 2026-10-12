@@ -42,6 +42,10 @@ export async function applyMigrations(connection, { statusOnly = false, through 
         const [[invalid]] = await connection.query("SELECT COUNT(*) AS count FROM ChiTietSanPham WHERE soLuongTon IS NULL OR soLuongTon < 0");
         if (invalid.count) throw new Error("Inventory migration requires nonnegative, non-null legacy stock; reconcile invalid variants first");
       }
+      if (name.startsWith("006_")) {
+        const [[invalid]] = await connection.query("SELECT COUNT(*) AS count FROM DonHang WHERE tongTien IS NULL OR tongTien < 0");
+        if (invalid.count) throw new Error("Voucher migration requires nonnegative, non-null legacy order totals; reconcile invalid orders first");
+      }
       await connection.execute("INSERT INTO schema_migrations VALUES (?, ?, 'APPLYING', NULL)", [name, checksum]);
       await connection.query(sql);
       await connection.execute("UPDATE schema_migrations SET state = 'APPLIED', applied_at = NOW() WHERE name = ?", [name]);

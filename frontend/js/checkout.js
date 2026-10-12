@@ -130,6 +130,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const button = document.getElementById("btnPlaceOrder");
   const buttonText = button.textContent;
   let submitting = false;
+  let previewing = false;
+  const voucherInput = document.getElementById("voucherCode");
+  const applyVoucherButton = document.getElementById("applyVoucher");
+  const voucherFeedback = document.getElementById("voucherFeedback");
+  const voucherDiscount = document.getElementById("voucherDiscount");
+  voucherInput.addEventListener("input", () => {
+    voucherDiscount.textContent = "0 VND";
+    voucherFeedback.textContent = "Ưu đãi sẽ được kiểm tra lại khi đặt hàng.";
+    finalTotalEl.textContent = totalAmount.toLocaleString() + " VND";
+  });
+  applyVoucherButton.addEventListener("click", async () => {
+    if (submitting || previewing) return;
+    const code = voucherInput.value.trim().toUpperCase();
+    if (!code) { voucherFeedback.textContent = "Vui lòng nhập mã ưu đãi."; return; }
+    previewing = true; applyVoucherButton.disabled = true; button.disabled = true;
+    applyVoucherButton.setAttribute("aria-busy", "true"); voucherFeedback.textContent = "Đang kiểm tra ưu đãi...";
+    try {
+      const response = await fetch("/api/vouchers/validate", { method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ voucherCode: code, items: checkoutItems.map(({ maSP, maSize, soLuongMua }) => ({ maSP, maSize, soLuongMua })) }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Không thể áp dụng mã ưu đãi");
+      if (voucherInput.value.trim().toUpperCase() !== code) return;
+      voucherDiscount.textContent = Number(result.data.discountAmount).toLocaleString() + " VND";
+      finalTotalEl.textContent = Number(result.data.totalAfterDiscount).toLocaleString() + " VND";
+      voucherFeedback.textContent = "Mã hợp lệ. Ưu đãi sẽ được kiểm tra lại khi đặt hàng.";
+    } catch (error) {
+      voucherDiscount.textContent = "0 VND"; finalTotalEl.textContent = totalAmount.toLocaleString() + " VND";
+      voucherFeedback.textContent = error.message;
+    } finally {
+      previewing = false; applyVoucherButton.disabled = false; button.disabled = submitting || paymentMethods.length === 0;
+      applyVoucherButton.removeAttribute("aria-busy");
+    }
+  });
   button.disabled = true;
   let paymentMethods = [];
   const methodsReady = fetch("/api/orders/payment-methods")
@@ -144,11 +179,11 @@ document.addEventListener("DOMContentLoaded", () => {
         option.textContent = method.tenPTTT;
         ptttSelect.appendChild(option);
       }
-      button.disabled = paymentMethods.length === 0;
+      button.disabled = previewing || paymentMethods.length === 0;
     }).catch((error) => alert(error.message));
 
   button.addEventListener("click", async () => {
-    if (submitting) return;
+    if (submitting || previewing) return;
     const tenNguoiNhan = document.getElementById("tenNguoiNhan").value.trim();
     const sdt = document.getElementById("sdt").value.trim();
     const diaChiGiaoHang = document.getElementById("diaChiGiaoHang").value.trim();
@@ -166,6 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ghiChu: document.getElementById("ghiChu").value,
         items: checkoutItems.map(({ maSP, maSize, soLuongMua }) => ({ maSP, maSize, soLuongMua })),
       };
+      if (voucherInput.value.trim()) payload.voucherCode = voucherInput.value.trim().toUpperCase();
       const fingerprint = JSON.stringify(payload);
       let session;
       try { session = JSON.parse(localStorage.getItem(sessionKey)); } catch { /* discard corrupt state */ }
@@ -197,9 +233,14 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const orderData = await orderResponse.json();
       if (!orderResponse.ok || !orderData.data?.maDonHang) {
+        if (String(orderData.code || "").startsWith("VOUCHER") || orderData.code === "MIN_ORDER_NOT_MET") voucherFeedback.textContent = orderData.message;
         throw new Error(orderData.message || "Không thể tạo đơn hàng");
       }
       const orderId = orderData.data.maDonHang;
+      if (orderData.data.discountAmount !== undefined) {
+        voucherDiscount.textContent = Number(orderData.data.discountAmount).toLocaleString() + " VND";
+        finalTotalEl.textContent = Number(orderData.data.tongTien).toLocaleString() + " VND";
+      }
       if (orderData.data.trangThai === "Đã hủy") {
         localStorage.removeItem(sessionKey);
         throw new Error("Đơn hàng đã hủy. Vui lòng đặt lại.");
@@ -238,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(error.message || "Lỗi kết nối server. Vui lòng thử lại.");
     } finally {
       submitting = false;
-      button.disabled = false;
+      button.disabled = paymentMethods.length === 0;
       button.removeAttribute("aria-busy");
       button.textContent = buttonText;
     }
