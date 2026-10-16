@@ -9,6 +9,7 @@ Workflow: [.github/workflows/commerce-regression.yml](../.github/workflows/comme
 | api-summary.json | Manifest completion, runtime, SHA and aggregate suite results |
 | endpoint-coverage.json | Mounted method/path → named collection cases |
 | release-evidence.json | Runtime/DB/checksums/counts/coverage/measured latency and pending external/manual gates |
+| npm-audit-root.json / npm-audit-backend.json | Full dependency-tree advisory snapshots; CI release gate separately blocks high/critical runtime dependencies with `--omit=dev` |
 | server.log | Managed server startup/shutdown errors; no .env dump |
 | browser/ | Failure screenshots/traces; review before public sharing |
 | phase3/phase4/phase5 screenshots | Browser acceptance screenshots with fixture-only UI data |

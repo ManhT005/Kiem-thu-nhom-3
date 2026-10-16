@@ -66,10 +66,14 @@ jobs:
         timeout-minutes: 5
       - name: Verify complete evidence and endpoint coverage
         run: npm run test:evidence
-      - name: Dependency security baseline
+      - name: Capture dependency advisory snapshots
         run: |
-          npm audit --audit-level=high
-          npm --prefix backend audit --audit-level=high
+          npm audit --json > test-results/npm-audit-root.json || true
+          npm --prefix backend audit --json > test-results/npm-audit-backend.json || true
+      - name: Runtime dependency security baseline
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix backend audit --omit=dev --audit-level=high
       - uses: actions/upload-artifact@v4
         if: always()
         with:

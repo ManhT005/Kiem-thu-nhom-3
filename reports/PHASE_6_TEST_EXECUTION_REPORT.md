@@ -14,7 +14,7 @@ Environment: Windows, Node **v24.12.0**, isolated Docker MySQL **8.0.46**, DB cl
 | Newman combined | 163 requests / 316 assertions PASS; 0 failures | test-results/api-summary.json; safe per-suite HTML/JSON |
 | Browser Chromium | 11/11 PASS; 0 fail/skip | test-results/browser.xml; screenshots |
 | Evidence and endpoint mapping | PASS, 62/62 mounted method/path entries have collection cases | test-results/endpoint-coverage.json, release-evidence.json |
-| Dependency audit | 0 vulnerabilities reported in root and backend | local npm audit JSON snapshots under test-results |
+| Dependency audit | CI blocks high/critical findings in runtime dependencies; full dependency-tree audit JSON is retained separately for test-tooling advisory visibility | test-results/npm-audit-root.json; test-results/npm-audit-backend.json |
 
 | API suite | Requests | Assertions | Failures |
 |---|---:|---:|---:|

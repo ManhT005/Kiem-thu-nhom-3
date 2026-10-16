@@ -1,4 +1,3 @@
-import axios from "axios";
 import crypto from "node:crypto";
 
 const partnerCode = process.env.MOMO_PARTNER_CODE || "MOMO";
@@ -87,28 +86,41 @@ export const createMomoPaymentLink = async ({
     .update(rawSignature)
     .digest("hex");
 
-  const response = await axios.post(
+  const response = await fetch(
     "https://test-payment.momo.vn/v2/gateway/api/create",
     {
-      partnerCode,
-      partnerName: "Test MoMo",
-      storeId: "MomoTestStore",
-      requestId,
-      amount,
-      orderId,
-      orderInfo,
-      redirectUrl,
-      ipnUrl,
-      lang: "vi",
-      requestType,
-      autoCapture: true,
-      extraData,
-      signature,
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        partnerCode,
+        partnerName: "Test MoMo",
+        storeId: "MomoTestStore",
+        requestId,
+        amount,
+        orderId,
+        orderInfo,
+        redirectUrl,
+        ipnUrl,
+        lang: "vi",
+        requestType,
+        autoCapture: true,
+        extraData,
+        signature,
+      }),
+      signal: AbortSignal.timeout(15_000),
     },
-    { timeout: 15_000 },
   );
 
-  return response.data;
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`MoMo gateway returned invalid JSON (HTTP ${response.status})`);
+  }
+  if (!response.ok) {
+    throw new Error(`MoMo gateway request failed with HTTP ${response.status}`);
+  }
+  return payload;
 };
 
 export const buildMomoIpnSignatureString = (payload, accessKey) => {
