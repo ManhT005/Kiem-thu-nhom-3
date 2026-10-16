@@ -1,3 +1,5 @@
+> **Historical baseline document.** This assessment was written before the six-phase modernization was completed. For the current project state, use [PROJECT_STATUS.md](PROJECT_STATUS.md). The issues below document the starting point and are intentionally retained as project history.
+
 # BÁO CÁO ĐÁNH GIÁ HIỆN TRẠNG PROJECT
 
 **Project:** `ManhT005/Kiem-thu-nhom-3`  
