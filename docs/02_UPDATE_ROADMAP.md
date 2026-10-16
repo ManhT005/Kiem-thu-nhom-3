@@ -1,3 +1,5 @@
+> **Historical roadmap.** The planned modernization described here has now been implemented through Phase 6. For current status and remaining acceptance work, use [PROJECT_STATUS.md](PROJECT_STATUS.md). No additional feature phase is planned before final QA/acceptance.
+
 # KẾ HOẠCH UPDATE TỔNG QUÁT PROJECT
 
 **Project:** `ManhT005/Kiem-thu-nhom-3`  
