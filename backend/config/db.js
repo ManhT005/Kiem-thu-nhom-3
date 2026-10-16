@@ -1,20 +1,21 @@
 import mysql from "mysql2";
 
-// Sử dụng process.env để lấy thông tin từ cấu hình của Render
-const db = mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "clothes_db",
-    port: process.env.DB_PORT || 3306
+const db = mysql.createPool({
+  host: process.env.DB_HOST || "127.0.0.1",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "clothes_db",
+  port: Number(process.env.DB_PORT || 3306),
+  waitForConnections: true,
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+  queueLimit: 0,
+  timezone: "Z",
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error("❌ Kết nối MySQL thất bại:", err.message);
-        return;
-    }
-    console.log("✅ Kết nối MySQL thành công!");
+// DATETIME payment deadlines use UTC both in SQL NOW() and in the JS driver.
+db.on("connection", (connection) => {
+  connection.query("SET time_zone = '+00:00'");
+  connection.query("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED");
 });
 
 export default db;

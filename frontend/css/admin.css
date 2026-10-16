@@ -291,3 +291,219 @@ button.delete-btn:hover {
   word-break: break-word;
   margin: 0; /* bỏ margin mặc định */
 }
+/* Lifecycle controls share the existing admin palette and retain visible focus. */
+.admin-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-header .header-right a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  color: white;
+}
+#user-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 18px 0;
+}
+#user-filter label,
+#users > label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#users > label {
+  margin-bottom: 20px;
+}
+#user-filter input,
+#user-filter select,
+#user-reason,
+#userTable select,
+#userTable button,
+#user-filter button,
+#user-prev,
+#user-next {
+  font: inherit;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #a6a6a6;
+  border-radius: 4px;
+  background: white;
+}
+#user-search,
+#user-reason {
+  width: 280px;
+  max-width: 100%;
+}
+#userTable button,
+#user-filter button {
+  cursor: pointer;
+  color: #941043;
+  border-color: #bf6889;
+}
+#users button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+#users :focus-visible,
+.admin-header a:focus-visible {
+  outline: 3px solid #941043;
+  outline-offset: 3px;
+}
+.admin-header a:focus-visible {
+  outline-color: white;
+}
+@media (max-width: 650px) {
+  #user-filter label,
+  #users > label {
+    width: 100%;
+  }
+  #user-search,
+  #user-reason {
+    width: 100%;
+  }
+}
+
+/* Reporting shares the admin palette and uses native controls and exact tables. */
+.sidebar li button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 3px solid #155e75;
+  outline-offset: 3px;
+}
+#dashboard {
+  color: #1f2937;
+  line-height: 1.5;
+  min-width: 0;
+}
+#dashboard-filter {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+#dashboard label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#dashboard input,
+#dashboard select,
+#dashboard button {
+  font: inherit;
+  padding: 10px;
+  min-height: 44px;
+  border: 1px solid #64748b;
+  border-radius: 6px;
+}
+#dashboard button {
+  cursor: pointer;
+  background: #fff;
+}
+#dashboard-refresh {
+  background: #a71850 !important;
+  color: white;
+}
+#dashboard button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+.dashboard-kpis > div {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+.dashboard-kpis dt {
+  font-size: 14px;
+}
+.dashboard-kpis dd {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+#dashboard-chart {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+#dashboard-chart svg {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  fill: #a71850;
+}
+.dashboard-table {
+  overflow: auto;
+}
+.dashboard-table table {
+  min-width: 450px;
+}
+#dashboard-warning {
+  color: #92400e;
+}
+#dashboard-message {
+  min-height: 24px;
+}
+@media (max-width: 700px) {
+  body {
+    display: block;
+  }
+  .admin-header {
+    position: static;
+    height: auto;
+    padding: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .admin-header .header-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .sidebar {
+    position: static;
+    width: auto;
+    height: auto;
+    padding-top: 0;
+  }
+  .sidebar ul {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .sidebar ul li {
+    padding: 12px;
+  }
+  .content {
+    margin-left: 0;
+    padding: 20px;
+    min-width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+}

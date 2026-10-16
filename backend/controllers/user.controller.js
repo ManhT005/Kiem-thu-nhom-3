@@ -1,16 +1,14 @@
 import User from "../models/users.js";
 import db from "../config/db.js"; // Import DB để dùng cho các query custom
+import { changeUserLifecycle, listUsers } from "../services/user-lifecycle.service.js";
 
 // ====================== LẤY DANH SÁCH USERS (ADMIN) ===========================
 // (Giữ nguyên code cũ của bạn)
-export const getAllUsers = (req, res) => {
-  User.getAll((err, users) => {
-    if (err) {
-      console.error("Lỗi get all users:", err);
-      return res.status(500).json({ message: "Lỗi server" });
-    }
-    res.json({ users });
-  });
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const result = await listUsers(req.query);
+    return res.json({ users: result.items, pagination: result.pagination });
+  } catch (error) { return next(error); }
 };
 
 // ====================== LẤY PROFILE (SỬA ĐỂ LẤY THÊM CỘT macDinh) ===========================
@@ -104,56 +102,18 @@ export const setDefaultAddress = (req, res) => {
 
 // ====================== XÓA USER (ADMIN) ===========================
 // (Giữ nguyên code cũ của bạn)
-export const deleteUser = (req, res) => {
-  const userId = req.params.id;
-  const adminId = req.user.id;
-
-  if (parseInt(userId) === parseInt(adminId)) {
-    return res.status(400).json({ message: "Không thể xóa tài khoản của chính mình" });
-  }
-
-  User.findById(userId, (err, result) => {
-    if (err) return res.status(500).json({ message: "Lỗi server" });
-    if (result.length === 0) return res.status(404).json({ message: "Không tìm thấy user" });
-
-    if (result[0].role === 'admin') {
-      return res.status(403).json({ message: "Không thể xóa tài khoản admin" });
-    }
-
-    User.delete(userId, (err, result) => {
-      if (err) return res.status(500).json({ message: "Lỗi khi xóa user" });
-      res.json({ message: "Xóa user thành công" });
-    });
-  });
+// Legacy endpoints route through the same lifecycle transaction; no physical account deletion.
+export const deleteUser = async (req, res, next) => {
+  try {
+    const user = await changeUserLifecycle({ userId: req.params.id, actorId: req.user.id, actorVersion: req.user.token_version,
+      operation: "LOCK", reason: req.body?.reason || "Disabled through legacy user management" });
+    return res.json({ message: "Tài khoản đã được khóa", user });
+  } catch (error) { return next(error); }
 };
-
-// ====================== CẬP NHẬT ROLE (ADMIN) ===========================
-// (Giữ nguyên code cũ của bạn)
-export const updateUserRole = (req, res) => {
-  const userId = req.params.id;
-  const { role } = req.body;
-  const adminId = req.user.id;
-
-  const validRoles = ['user', 'staff', 'admin'];
-  if (!role || !validRoles.includes(role)) {
-    return res.status(400).json({ message: "Role không hợp lệ" });
-  }
-
-  if (parseInt(userId) === parseInt(adminId)) {
-    return res.status(400).json({ message: "Không thể thay đổi role của chính mình" });
-  }
-
-  User.findById(userId, (err, result) => {
-    if (err) return res.status(500).json({ message: "Lỗi server" });
-    if (result.length === 0) return res.status(404).json({ message: "Không tìm thấy user" });
-
-    if (result[0].role === 'admin' && role !== 'admin') {
-      return res.status(403).json({ message: "Không thể thay đổi role của admin khác" });
-    }
-
-    User.updateRole(userId, role, (err, result) => {
-      if (err) return res.status(500).json({ message: "Lỗi khi cập nhật role" });
-      res.json({ message: "Cập nhật role thành công", userId, newRole: role });
-    });
-  });
+export const updateUserRole = async (req, res, next) => {
+  try {
+    const user = await changeUserLifecycle({ userId: req.params.id, actorId: req.user.id, actorVersion: req.user.token_version,
+      operation: "ROLE", role: req.body.role, reason: req.body.reason || "Role changed through legacy user management" });
+    return res.json({ message: "Đã thay đổi quyền và thu hồi token cũ", user });
+  } catch (error) { return next(error); }
 };

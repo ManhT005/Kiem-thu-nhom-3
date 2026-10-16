@@ -1,0 +1,83 @@
+name: Commerce Full Regression
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commerce-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: clothes_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: clothes_test
+      ORDER_CONCURRENCY_TEST: "1"
+      JWT_SECRET: phase-2-ci-only-secret
+      CORS_ORIGIN: http://localhost:3000
+      PORT: 3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - run: npm ci
+      - run: npm --prefix backend ci
+      - run: npm run check
+      - run: npm run test:unit
+        timeout-minutes: 3
+      - run: npm run db:reset
+      - run: npm run db:seed:phase2
+      - run: npm run test:integration
+        timeout-minutes: 6
+      - run: npm run db:seed:phase2
+      - name: API regression with health check and cleanup
+        run: npm run test:api:managed
+        timeout-minutes: 4
+      - run: npx playwright install --with-deps chromium
+        timeout-minutes: 3
+      - run: npm run test:browser
+        timeout-minutes: 5
+      - name: Verify complete evidence and endpoint coverage
+        run: npm run test:evidence
+      - name: Capture dependency advisory snapshots
+        run: |
+          npm audit --json > test-results/npm-audit-root.json || true
+          npm --prefix backend audit --json > test-results/npm-audit-backend.json || true
+      - name: Runtime dependency security baseline
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix backend audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: commerce-test-evidence
+          retention-days: 14
+          if-no-files-found: error
+          path: test-results/

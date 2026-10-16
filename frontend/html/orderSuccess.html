@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kết quả thanh toán</title>
-    <link rel="stylesheet" href="../css/orderSuccess.css" />
+    <link rel="stylesheet" href="/css/orderSuccess.css" />
 </head>
 <body>
 
@@ -13,7 +13,7 @@
         <h1>Thanh toán thành công!</h1>
         <p>Cảm ơn bạn đã mua hàng tại MyShop.</p>
         <p>Đơn hàng của bạn đang được xử lý.</p>
-        <a href="index.html" class="btn btn-success">Tiếp tục mua sắm</a>
+        <a href="/" class="btn btn-success">Tiếp tục mua sắm</a>
     </div>
 
     <div class="container" id="fail-view">
@@ -21,11 +21,27 @@
         <h1>Thanh toán thất bại</h1>
         <p>Giao dịch đã bị hủy hoặc gặp lỗi.</p>
         <p>Vui lòng thử lại hoặc chọn phương thức khác.</p>
-        <a href="checkout.html" class="btn btn-fail">Thử lại</a>
-        <a href="index.html" class="btn btn-home">Về trang chủ</a>
+        <a href="/checkout" class="btn btn-fail">Thử lại</a>
+        <a href="/" class="btn btn-home">Về trang chủ</a>
     </div>
 
-    <script src="../js/orderSuccess.js"></script>
+    <div class="container" id="pending-view">
+        <div class="icon-success">⏳</div>
+        <h1 id="pending-title">Đang kiểm tra thanh toán</h1>
+        <p id="pending-message">Chúng tôi đang chờ MoMo xác nhận giao dịch.</p>
+        <button id="check-payment-button" class="btn btn-success" type="button">
+            Kiểm tra lại
+        </button>
+    </div>
+
+    <div class="container" id="refund-view">
+        <div class="icon-fail">⚠️</div>
+        <h1>Đã nhận thanh toán, đơn hàng đã hết hạn</h1>
+        <p>Vui lòng liên hệ cửa hàng để được hỗ trợ hoàn tiền.</p>
+        <a href="/orders" class="btn btn-home">Xem đơn hàng</a>
+    </div>
+
+    <script src="/js/orderSuccess.js"></script>
 
 </body>
 </html>

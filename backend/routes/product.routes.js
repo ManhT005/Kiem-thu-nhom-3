@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
+import { fileURLToPath } from "node:url";
 import {
   getProducts,
   getProductById,
@@ -18,7 +19,7 @@ const router = express.Router();
 // Cấu hình multer để upload ảnh
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(process.cwd(), "../frontend/Asset"));
+    cb(null, fileURLToPath(new URL("../../frontend/Asset/", import.meta.url)));
   },
   filename: (req, file, cb) => {
     const uniqueName =

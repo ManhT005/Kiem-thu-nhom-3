@@ -1,0 +1,295 @@
+import { applyMovement } from "../services/inventory.service.js";
+
+const ORDER_ROWS_SELECT = `
+  SELECT
+    d.maDonHang, d.ngayDat, d.trangThai, d.tongTien, d.payment_status,
+    d.payment_expires_at, d.tenNguoiNhan, d.subtotal_before_discount, d.discount_amount, d.voucher_code_snapshot,
+    d.sdt, d.diaChiGiaoHang, d.ghiChu,
+    c.maSP, c.maSize, c.soLuongMua, c.giaMua,
+    s.tenSP, s.anhSP, sz.tenSize
+  FROM DonHang d
+  LEFT JOIN ChiTietDonHang c ON d.maDonHang = c.maDonHang
+  LEFT JOIN SanPham s ON c.maSP = s.maSP
+  LEFT JOIN \`Size\` sz ON c.maSize = sz.maSize`;
+
+const buildOrderFilters = (filters) => {
+  const conditions = [];
+  const values = [];
+
+  if (filters.trangThai) {
+    conditions.push("d.trangThai = ?");
+    values.push(filters.trangThai);
+  }
+  if (filters.fromDate) {
+    conditions.push("d.ngayDat >= ?");
+    values.push(filters.fromDate);
+  }
+  if (filters.toDate) {
+    conditions.push("d.ngayDat < DATE_ADD(?, INTERVAL 1 DAY)");
+    values.push(filters.toDate);
+  }
+  if (filters.minTotal !== undefined) {
+    conditions.push("d.tongTien >= ?");
+    values.push(filters.minTotal);
+  }
+  if (filters.maxTotal !== undefined) {
+    conditions.push("d.tongTien <= ?");
+    values.push(filters.maxTotal);
+  }
+  if (filters.keyword) {
+    const keyword = `%${String(filters.keyword).replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push(
+      "(CAST(d.maDonHang AS CHAR) LIKE ? OR d.tenNguoiNhan LIKE ? OR d.sdt LIKE ?)",
+    );
+    values.push(keyword, keyword, keyword);
+  }
+
+  return {
+    clause: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+    values,
+  };
+};
+
+export const orderRepository = {
+  async lockCheckoutUser(connection, userId) {
+    const [rows] = await connection.execute("SELECT id, status, role, token_version FROM users WHERE id = ? FOR UPDATE", [userId]);
+    return rows[0] ?? null;
+  },
+
+  async findCheckoutRequest(connection, userId, key) {
+    const [rows] = await connection.execute(
+      `SELECT r.request_hash, d.maDonHang, d.tongTien, d.trangThai, d.payment_status AS paymentStatus,
+       d.subtotal_before_discount, d.discount_amount, d.voucher_code_snapshot
+       FROM OrderCheckoutRequest r JOIN DonHang d ON d.maDonHang = r.order_id
+       WHERE r.user_id = ? AND r.idempotency_key = ? FOR UPDATE`, [userId, key]);
+    return rows[0] ?? null;
+  },
+
+  async insertCheckoutRequest(connection, userId, key, hash, orderId) {
+    await connection.execute(
+      `INSERT INTO OrderCheckoutRequest (user_id, idempotency_key, request_hash, order_id)
+       VALUES (?, ?, ?, ?)`, [userId, key, hash, orderId]);
+  },
+
+  async getPaymentMethods(executor) {
+    const [rows] = await executor.execute("SELECT maPTTT, tenPTTT FROM phuongThucThanhToan ORDER BY maPTTT");
+    return rows.map((row) => ({ ...row, code: row.tenPTTT === "MOMO" ? "MOMO" :
+      /COD|khi nhận/i.test(row.tenPTTT) ? "COD" : "BANK_TRANSFER" }));
+  },
+
+  async findPaymentMethod(connection, paymentMethodId) {
+    const [rows] = await connection.execute(
+      "SELECT maPTTT, tenPTTT FROM phuongThucThanhToan WHERE maPTTT = ?",
+      [paymentMethodId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async lockVariant(connection, productId, sizeId) {
+    const [rows] = await connection.execute(
+      `SELECT sp.maSP, sp.gia, ct.maSize, ct.soLuongTon
+       FROM SanPham sp
+       JOIN ChiTietSanPham ct ON ct.maSP = sp.maSP
+       WHERE sp.maSP = ? AND ct.maSize = ? AND ct.is_active = 1
+       FOR UPDATE`,
+      [productId, sizeId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async insertOrder(connection, order) {
+    const [result] = await connection.execute(
+      `INSERT INTO DonHang
+       (id, tenNguoiNhan, sdt, diaChiGiaoHang, ghiChu, tongTien, maPTTT,
+        trangThai, payment_status, payment_expires_at, maGiamGia, subtotal_before_discount, discount_amount, voucher_code_snapshot)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+         CASE WHEN ? = 'PENDING' THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE) ELSE NULL END, ?, ?, ?, ?)`,
+      [
+        order.userId,
+        order.tenNguoiNhan,
+        order.sdt,
+        order.diaChiGiaoHang,
+        order.ghiChu,
+        order.tongTien,
+        order.maPTTT,
+        order.trangThai,
+        order.paymentStatus,
+        order.paymentStatus,
+        order.voucherId, order.subtotalBeforeDiscount, order.discountAmount, order.voucherCode,
+      ],
+    );
+    return result.insertId;
+  },
+
+  async insertOrderItem(connection, orderId, item) {
+    await connection.execute(
+      `INSERT INTO ChiTietDonHang
+       (maDonHang, maSP, maSize, soLuongMua, giaMua)
+       VALUES (?, ?, ?, ?, ?)`,
+      [orderId, item.maSP, item.maSize, item.soLuongMua, item.giaMua],
+    );
+  },
+
+  async reduceStock(connection, item, context) {
+    await applyMovement(connection, {
+      maSP: item.maSP, maSize: item.maSize, delta: -item.soLuongMua,
+      eventType: "ORDER", referenceType: "ORDER", referenceId: context.orderId,
+      actorId: context.actorId, reason: "ORDER_CREATED",
+    });
+    return 1;
+  },
+
+  async lockCart(connection, userId) {
+    const [rows] = await connection.execute(
+      "SELECT maGioHang FROM GioHang WHERE userId = ? ORDER BY maGioHang LIMIT 1 FOR UPDATE",
+      [userId],
+    );
+    return rows[0]?.maGioHang ?? null;
+  },
+
+  async removeCartItem(connection, cartId, item) {
+    await connection.execute(
+      "DELETE FROM ChiTietGioHang WHERE maGioHang = ? AND maSP = ? AND maSize = ?",
+      [cartId, item.maSP, item.maSize],
+    );
+  },
+
+  async insertHistory(connection, history) {
+    await connection.execute(
+      `INSERT INTO LichSuDonHang
+       (maDonHang, trangThaiCu, trangThaiMoi, nguoiThayDoi, lyDo)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        history.orderId,
+        history.previousStatus,
+        history.newStatus,
+        history.actorId,
+        history.reason,
+      ],
+    );
+  },
+
+  async lockOrder(connection, orderId) {
+    const [rows] = await connection.execute(
+      "SELECT maDonHang, id, trangThai, maGiamGia, payment_status FROM DonHang WHERE maDonHang = ? FOR UPDATE",
+      [orderId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async getOrderItems(connection, orderId) {
+    const [rows] = await connection.execute(
+      `SELECT maSP, maSize, soLuongMua
+       FROM ChiTietDonHang
+       WHERE maDonHang = ?
+       ORDER BY maSP, maSize
+       FOR UPDATE`,
+      [orderId],
+    );
+    return rows;
+  },
+
+  async restoreStock(connection, item, context) {
+    await applyMovement(connection, {
+      maSP: item.maSP, maSize: item.maSize, delta: item.soLuongMua,
+      eventType: "CANCEL", referenceType: "ORDER", referenceId: context.orderId,
+      actorId: context.actorId, reason: context.reason || "ORDER_CANCELLED",
+    });
+    return 1;
+  },
+
+  async updateOrderStatus(connection, orderId, status) {
+    const [result] = await connection.execute(
+      "UPDATE DonHang SET trangThai = ? WHERE maDonHang = ?",
+      [status, orderId],
+    );
+    return result.affectedRows;
+  },
+
+  async cancelPendingPayment(connection, orderId) {
+    await connection.execute(
+      `UPDATE MomoPaymentTransaction
+       SET status = 'EXPIRED'
+       WHERE maDonHang = ? AND status = 'PENDING'`,
+      [orderId],
+    );
+    await connection.execute(
+      `UPDATE DonHang
+       SET payment_status = CASE WHEN payment_status = 'PAID' THEN 'REFUND_REQUIRED' ELSE 'CANCELLED' END
+       WHERE maDonHang = ? AND payment_status IN ('PENDING','PAID')`,
+      [orderId],
+    );
+  },
+
+  async getMyOrderRows(executor, userId) {
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       WHERE d.id = ?
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC`,
+      [userId],
+    );
+    return rows;
+  },
+
+  async getAllOrderRows(executor) {
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC`,
+    );
+    return rows;
+  },
+
+  async getOrderOwner(executor, orderId) {
+    const [rows] = await executor.execute(
+      "SELECT maDonHang, id FROM DonHang WHERE maDonHang = ?",
+      [orderId],
+    );
+    return rows[0] ?? null;
+  },
+
+  async getOrderHistory(executor, orderId) {
+    const [rows] = await executor.execute(
+      `SELECT h.maLichSu, h.maDonHang, h.trangThaiCu, h.trangThaiMoi,
+              h.nguoiThayDoi, u.ten AS tenNguoiThayDoi, h.lyDo, h.thoiGian
+       FROM LichSuDonHang h
+       LEFT JOIN users u ON u.id = h.nguoiThayDoi
+       WHERE h.maDonHang = ?
+       ORDER BY h.thoiGian ASC, h.maLichSu ASC`,
+      [orderId],
+    );
+    return rows;
+  },
+
+  async getFilteredOrderPage(executor, filters, { limit, offset }) {
+    const { clause, values } = buildOrderFilters(filters);
+    const [countRows] = await executor.execute(
+      `SELECT COUNT(*) AS total FROM DonHang d ${clause}`,
+      values,
+    );
+    const total = Number(countRows[0]?.total || 0);
+    if (total === 0) return { rows: [], total };
+
+    const queryMethod = executor.query
+      ? executor.query.bind(executor)
+      : executor.execute.bind(executor);
+    const [orderRows] = await queryMethod(
+      `SELECT d.maDonHang
+       FROM DonHang d
+       ${clause}
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC
+       LIMIT ? OFFSET ?`,
+      [...values, limit, offset],
+    );
+    const orderIds = orderRows.map((row) => row.maDonHang);
+    if (orderIds.length === 0) return { rows: [], total };
+
+    const placeholders = orderIds.map(() => "?").join(", ");
+    const [rows] = await executor.execute(
+      `${ORDER_ROWS_SELECT}
+       WHERE d.maDonHang IN (${placeholders})
+       ORDER BY d.ngayDat DESC, d.maDonHang DESC, c.maSP, c.maSize`,
+      orderIds,
+    );
+    return { rows, total };
+  },
+};

@@ -102,6 +102,829 @@
           }
         }
       ]
+    },
+    {
+      "name": "Phase 2 Order Authentication Guards",
+      "item": [
+        {
+          "name": "Create order requires authentication",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My orders requires authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/my-orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User cancellation requires authentication",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/1/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Status update requires authentication",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/1/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order history requires authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/1/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin order filter requires authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/orders/admin/filter"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('UNAUTHENTICATED code', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 Order Integrity Business Flow",
+      "item": [
+        {
+          "name": "Login Phase 2 user A",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"phase2-user-a@example.test\",\n  \"password\": \"Phase2Test!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('userAToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Phase 2 user B",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"phase2-user-b@example.test\",\n  \"password\": \"Phase2Test!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('userBToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Phase 2 staff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"phase2-staff@example.test\",\n  \"password\": \"Phase2Test!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('staffToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Phase 2 admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"phase2-admin@example.test\",\n  \"password\": \"Phase2Test!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order ignores client prices",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"tongTien\": 1,\n  \"items\": [{ \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1, \"gia\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const order = pm.response.json().data;",
+                  "pm.test('server price and pending status', () => { pm.expect(order.tongTien).to.eql(4000); pm.expect(order.trangThai).to.eql('Chờ xác nhận'); });",
+                  "pm.collectionVariables.set('phase2OrderId', order.maDonHang);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff cannot create an order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin cannot create an order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order with invalid variant returns 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [{ \"maSP\": 99999, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('ORDER_VARIANT_NOT_FOUND code', () => pm.expect(pm.response.json().code).to.eql('ORDER_VARIANT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order with duplicate variant returns 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [\n    { \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 },\n    { \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('ORDER_DUPLICATE_ITEM code', () => pm.expect(pm.response.json().code).to.eql('ORDER_DUPLICATE_ITEM'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order with invalid payment method returns 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 99999,\n  \"items\": [{ \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('PAYMENT_METHOD_NOT_FOUND code', () => pm.expect(pm.response.json().code).to.eql('PAYMENT_METHOD_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer cannot access all orders list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/all"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff cannot access my-orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/my-orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN code', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Non-owner cannot cancel the order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userBToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{phase2OrderId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('owner check', () => pm.expect(pm.response.json().code).to.eql('ORDER_ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner cancels pending order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{phase2OrderId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('order cancelled', () => pm.expect(pm.response.json().data.trangThai).to.eql('Đã hủy'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Second cancellation is rejected",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{phase2OrderId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('already cancelled code', () => pm.expect(pm.response.json().code).to.eql('ORDER_ALREADY_CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancellation restores inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/93004"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const product = pm.response.json().data.product;",
+                  "pm.test('stock restored once', () => pm.expect(product.sizes.find((size) => size.maSize === 92901).soLuongTon).to.eql(10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Zero stock rejects order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [{ \"maSP\": 93001, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('INSUFFICIENT_STOCK code', () => pm.expect(pm.response.json().code).to.eql('INSUFFICIENT_STOCK'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Second item stock failure rejects the whole order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [\n    { \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 },\n    { \"maSP\": 93005, \"maSize\": 92901, \"soLuongMua\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('INSUFFICIENT_STOCK code', () => pm.expect(pm.response.json().code).to.eql('INSUFFICIENT_STOCK'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Failed multi-item order leaves first item stock unchanged",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/93004"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const product = pm.response.json().data.product;",
+                  "pm.test('first item stock remains 10', () => pm.expect(product.sizes.find((size) => size.maSize === 92901).soLuongTon).to.eql(10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order for state transition tests",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenNguoiNhan\": \"Phase 2 Recipient\",\n  \"sdt\": \"0900000000\",\n  \"diaChiGiaoHang\": \"Test address\",\n  \"maPTTT\": 92901,\n  \"items\": [{ \"maSP\": 93004, \"maSize\": 92901, \"soLuongMua\": 1 }]\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/create"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('transitionOrderId', pm.response.json().data.maDonHang);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PENDING to SHIPPING is rejected",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đang giao\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('invalid transition code', () => pm.expect(pm.response.json().code).to.eql('INVALID_ORDER_TRANSITION'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PENDING to CONFIRMED is allowed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đã xác nhận\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status confirmed', () => pm.expect(pm.response.json().data.trangThai).to.eql('Đã xác nhận'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CONFIRMED to SHIPPING is allowed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Đang giao\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status shipping', () => pm.expect(pm.response.json().data.trangThai).to.eql('Đang giao'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SHIPPING to COMPLETED is allowed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trangThai\": \"Hoàn thành\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status completed', () => pm.expect(pm.response.json().data.trangThai).to.eql('Hoàn thành'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Completed order cannot be cancelled by owner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('owner cancellation rejected', () => pm.expect(pm.response.json().code).to.eql('ORDER_CANCEL_NOT_ALLOWED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner can access own order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userAToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('history is an array', () => pm.expect(Array.isArray(pm.response.json().data)).to.be.true);",
+                  "pm.test('history has transitions', () => pm.expect(pm.response.json().data.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other user cannot access order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userBToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+                  "pm.test('access denied code', () => pm.expect(pm.response.json().code).to.eql('ORDER_ACCESS_DENIED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff can access order history",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/{{transitionOrderId}}/history"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('staff history is array', () => pm.expect(Array.isArray(pm.response.json().data)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff filter orders by status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/admin/filter?trangThai=Ho%C3%A0n%20th%C3%A0nh&page=1&limit=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ORDER_LIST_SUCCESS code', () => pm.expect(pm.response.json().code).to.eql('ORDER_LIST_SUCCESS'));",
+                  "pm.test('filter returns pagination', () => pm.expect(pm.response.json().data.pagination).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Staff filter with invalid status returns 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{staffToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/orders/admin/filter?trangThai=InvalidStatus"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error code', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

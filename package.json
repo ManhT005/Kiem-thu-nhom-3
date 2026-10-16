@@ -5,7 +5,21 @@
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
     "db:reset": "npm --prefix backend run db:reset",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:migrate:status": "npm --prefix backend run db:migrate:status",
     "db:seed": "npm --prefix backend run db:seed",
+    "db:seed:phase2": "npm --prefix backend run db:seed:phase2",
+    "test:backend": "npm --prefix backend test",
+    "check": "npm --prefix backend run check",
+    "test:unit": "npm --prefix backend run test:unit",
+    "test:routes": "npm --prefix backend run test:routes",
+    "test:browser": "playwright test",
+    "test:evidence": "node tests/verify-evidence.cjs",
+    "test:all": "npm run check && npm run test:unit && npm run test:integration && npm run db:seed:phase2 && npm run test:api:managed && npm run test:browser && npm run test:evidence",
+    "test:api:managed": "node tests/run-api-regression.cjs",
+    "test:order-concurrency": "npm --prefix backend run test:order-concurrency",
+    "test:order-lifecycle": "npm --prefix backend run test:order-lifecycle",
+    "test:integration": "npm --prefix backend run test:integration",
     "test:api": "newman run tests/postman/ClothesShop.postman_collection.json -e tests/postman/local.postman_environment.json --reporters cli",
     "test:api:report": "newman run tests/postman/ClothesShop.postman_collection.json -e tests/postman/local.postman_environment.json --reporters cli,htmlextra"
   },
@@ -13,6 +27,7 @@
     "cors": "^2.8.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "newman": "^6.2.2",
     "newman-reporter-htmlextra": "^1.23.1"
   }

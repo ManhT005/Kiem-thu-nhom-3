@@ -1,0 +1,868 @@
+{
+  "info": {
+    "name": "Phase 4 User RBAC Voucher Integrity",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login user",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-user-a@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('userToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login other",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-user-b@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('otherToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login staff",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-staff@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('staffToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login admin",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-admin@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('voucherCode','P4-'+Date.now());",
+              "pm.collectionVariables.set('voucherStart',new Date(Date.now()-60000).toISOString());",
+              "pm.collectionVariables.set('voucherEnd',new Date(Date.now()+86400000).toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('adminToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "User cannot create voucher",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/admin/vouchers",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Staff cannot apply vouchers",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/vouchers/validate",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create FIXED voucher",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/admin/vouchers",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"code\":\"{{voucherCode}}\",\"discountType\":\"FIXED\",\"discountValue\":500,\"minimumOrderAmount\":0,\"startAt\":\"{{voucherStart}}\",\"endAt\":\"{{voucherEnd}}\",\"usageLimit\":1,\"perUserLimit\":1,\"enabled\":true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('voucherId',pm.response.json().data.maGiamGia);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preview uses server price and consumes nothing",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/vouchers/validate",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"voucherCode\":\"{{voucherCode}}\",\"subtotal\":1,\"items\":[{\"maSP\":93003,\"maSize\":92901,\"soLuongMua\":1,\"gia\":1}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Server preview',()=>{const d=pm.response.json().data;pm.expect(d.subtotalBeforeDiscount).to.eql(3000);pm.expect(d.discountAmount).to.eql(500);pm.expect(d.totalAfterDiscount).to.eql(2500);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage remains zero after preview",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/admin/vouchers?code={{voucherCode}}",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No consumption',()=>pm.expect(pm.response.json().data.items[0].used_count).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create voucher order ignores fake prices",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/orders/create",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenNguoiNhan\":\"Phase4 QA\",\"sdt\":\"0900000000\",\"diaChiGiaoHang\":\"QA address\",\"maPTTT\":92901,\"voucherCode\":\"{{voucherCode}}\",\"idempotencyKey\":\"p4-{{voucherCode}}\",\"tongTien\":1,\"discountAmount\":999999,\"items\":[{\"maSP\":93003,\"maSize\":92901,\"soLuongMua\":1,\"gia\":1}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "const d=pm.response.json().data;pm.collectionVariables.set('orderId',d.maDonHang);pm.test('Snapshot',()=>{pm.expect(d.tongTien).to.eql(2500);pm.expect(d.discountAmount).to.eql(500);pm.expect(d.subtotalBeforeDiscount).to.eql(3000);});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Idempotent voucher order replay",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/orders/create",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenNguoiNhan\":\"Phase4 QA\",\"sdt\":\"0900000000\",\"diaChiGiaoHang\":\"QA address\",\"maPTTT\":92901,\"voucherCode\":\"{{voucherCode}}\",\"idempotencyKey\":\"p4-{{voucherCode}}\",\"tongTien\":1,\"discountAmount\":999999,\"items\":[{\"maSP\":93003,\"maSize\":92901,\"soLuongMua\":1,\"gia\":1}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+              "pm.test('Same order',()=>pm.expect(pm.response.json().data.maDonHang).to.eql(Number(pm.collectionVariables.get('orderId'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exactly one usage reserved",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/admin/vouchers?code={{voucherCode}}",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('One consumption',()=>pm.expect(pm.response.json().data.items[0].used_count).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Other buyer cannot overspend usage",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/orders/create",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{otherToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenNguoiNhan\":\"Phase4 QA\",\"sdt\":\"0900000000\",\"diaChiGiaoHang\":\"QA address\",\"maPTTT\":92901,\"voucherCode\":\"{{voucherCode}}\",\"idempotencyKey\":\"p4-other-{{voucherCode}}\",\"tongTien\":1,\"discountAmount\":999999,\"items\":[{\"maSP\":93003,\"maSize\":92901,\"soLuongMua\":1,\"gia\":1}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409',()=>pm.response.to.have.status(409));",
+              "pm.test('Usage exhausted',()=>pm.expect(pm.response.json().code).to.eql('VOUCHER_USAGE_LIMIT'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cancel releases usage",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"lyDo\":\"QA voucher cancellation\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Repeated cancel cannot release again",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409',()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage returns to zero",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/admin/vouchers?code={{voucherCode}}",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('Released once',()=>pm.expect(pm.response.json().data.items[0].used_count).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lock customer",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/admin/users/92001/lock",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\":\"QA lock\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Old JWT rejected when locked",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cart",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));",
+              "pm.test('Locked',()=>pm.expect(pm.response.json().code).to.eql('ACCOUNT_LOCKED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locked login cannot issue JWT",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-user-a@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));",
+              "pm.test('Locked login',()=>pm.expect(pm.response.json().code).to.eql('ACCOUNT_LOCKED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unlock customer",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/admin/users/92001/unlock",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\":\"QA unlock\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Old JWT remains revoked after unlock",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cart",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+              "pm.test('Revoked',()=>pm.expect(pm.response.json().code).to.eql('TOKEN_REVOKED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fresh login works",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-user-a@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('freshUserToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fresh customer token can read cart",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/cart",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{freshUserToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Demote staff",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/admin/users/92003/role",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"role\":\"user\",\"reason\":\"QA role change\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Old staff JWT is revoked",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+              "pm.test('Role revocation',()=>pm.expect(pm.response.json().code).to.eql('TOKEN_REVOKED'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Demoted staff login",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"phase2-staff@example.test\",\"password\":\"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('demotedToken',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Persisted role cannot receive goods",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/receipts",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{demotedToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 403',()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restore staff fixture role",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/admin/users/92003/role",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"role\":\"staff\",\"reason\":\"QA role restored\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin self-lock rejected",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/admin/users/92004/lock",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\":\"QA self\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409',()=>pm.response.to.have.status(409));",
+              "pm.test('Self guard',()=>pm.expect(pm.response.json().code).to.eql('SELF_MANAGEMENT_FORBIDDEN'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voucher cancellation stock/ledger reconciles",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/inventory/reconciliation?maSP=93003&maSize=92901",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+              "pm.test('No inventory difference',()=>pm.expect(pm.response.json().data.items[0].difference).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

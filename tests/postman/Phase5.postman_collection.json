@@ -1,0 +1,946 @@
+{
+  "info": {
+    "name": "Phase 5 Reporting and Payment Reconciliation [critical regression security P5]",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-user-a@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login success\", () => pm.response.to.have.status(200));",
+              "pm.environment.set(\"userToken\", pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login staff",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-staff@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login success\", () => pm.response.to.have.status(200));",
+              "pm.environment.set(\"staffToken\", pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-admin@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login success\", () => pm.response.to.have.status(200));",
+              "pm.environment.set(\"adminToken\", pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/summary None",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/summary userToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/summary staffToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/top-products None",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/top-products userToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/top-products staffToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/revenue-chart None",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/revenue-chart userToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 dashboard/revenue-chart staffToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation None",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation userToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation staffToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation/summary None",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation/summary userToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-009 payments/reconciliation/summary staffToken",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-001/002/003/004/010 summary oracle",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Exact completion oracle\", () => { pm.expect(body.code).to.eql(\"DASHBOARD_SUMMARY_FETCHED\"); pm.expect(body.data.completedOrderCount).to.eql(2); pm.expect(body.data.completedOrderValue).to.eql(7000); pm.expect(body.data.grossCompletedValue).to.eql(7500); pm.expect(body.data.completedDiscountAmount).to.eql(500); pm.expect(body.data.totalOrders).to.eql(10); pm.expect(body.data.legacyExcluded).to.be.at.least(2); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-007 top ties collapse sizes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05&limit=1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Top oracle\", () => { pm.expect(body.data.items).to.have.lengthOf(1); pm.expect(body.data.items[0].quantity).to.eql(2); pm.expect(body.data.items[0].grossSales).to.eql(5000); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-005/006 day zero buckets",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Daily oracle\", () => pm.expect(body.data.buckets.map(b=>b.completedOrderValue)).to.eql([4500,2500,0,0]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-006 week",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05&groupBy=week"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Bucket total\", () => pm.expect(body.data.buckets.reduce((sum,b)=>sum+b.completedOrderValue,0)).to.eql(7000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-006 month",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05&groupBy=month"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Bucket total\", () => pm.expect(body.data.buckets.reduce((sum,b)=>sum+b.completedOrderValue,0)).to.eql(7000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-006 leap day empty",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2024-02-28&to=2024-03-02"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Leap zero buckets\", () => { pm.expect(body.data.buckets).to.have.lengthOf(3); pm.expect(body.data.buckets.every(b=>b.completedOrderValue===0)).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-P-009 refund reconciliation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Read-only exception oracle\", () => { pm.expect(body.data.total).to.eql(1); pm.expect(body.data.items[0].reasons).to.eql([\"REFUND_REQUIRED\"]); pm.expect(JSON.stringify(body)).not.to.match(/signature|pay_url|request_id|email|token/i); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-P-009 exception summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation/summary?from=2091-01-01&to=2091-01-05"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Summary oracle\", () => { pm.expect(body.data.total).to.eql(1); pm.expect(body.data.REFUND_REQUIRED).to.eql(1); pm.expect(body.data.PAYMENT_MISMATCH).to.eql(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-P-009 empty pagination",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05&page=2&limit=1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"No second result\", () => pm.expect(body.data.items).to.have.lengthOf(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Invalid date",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2023-02-29&to=2023-03-01"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Reverse range",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/summary?from=2091-01-05&to=2091-01-01"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Limit zero",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05&limit=0"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Limit 21",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05&limit=21"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 SQL-shaped sort",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/top-products?from=2091-01-01&to=2091-01-05&sort=quantity%3BDROP"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 SQL-shaped group",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-01-05&groupBy=month%20OR%201%3D1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Bucket overflow",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/dashboard/revenue-chart?from=2091-01-01&to=2091-02-01"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Page zero",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05&page=0"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P5-R-008 Unknown exception",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/payments/reconciliation?from=2091-01-01&to=2091-01-05&status=PAID"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body = pm.response.json();",
+              "pm.test(\"Envelope and code\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Filter code\", () => pm.expect(body.code).to.eql(\"INVALID_REPORT_FILTER\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

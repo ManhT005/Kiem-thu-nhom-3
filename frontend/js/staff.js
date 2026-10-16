@@ -1,11 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (character) => {
+      const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return entities[character];
+    });
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
   const savedTab = localStorage.getItem("currentStaffTab") || "tabKho";
   // 1. Kiểm tra đăng nhập
   if (!token) {
     alert("Bạn chưa đăng nhập!");
-    window.location.href = "/html/login.html";
+    window.location.href = "/login";
     return;
   }
 
@@ -19,7 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      window.location.href = "/html/index.html";
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith("checkoutSession:")) localStorage.removeItem(key);
+      }
+      localStorage.removeItem("checkoutItems");
+      localStorage.removeItem("pendingMomoOrderId");
+      window.location.href = "/";
     });
   }
 
@@ -65,9 +81,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("searchInput");
     const search = searchInput ? searchInput.value : "";
     try {
-      const res = await fetch(`/api/kho?search=${search}`, {
+      const res = await fetch(
+        `/api/kho?search=${encodeURIComponent(search)}`,
+        {
         headers: { Authorization: `Bearer ${token}` },
-      });
+        },
+      );
       const data = await res.json();
 
       const tbody = document.querySelector("#khoTable tbody");
@@ -80,9 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       data.products.forEach((sp) => {
-        const imgSrc = sp.anhSP
-          ? `../Asset/${sp.anhSP}`
-          : "../Asset/no-image.jpg";
+        const imgSrc = window.safeAssetUrl(sp.anhSP);
 
         let sizeSummary =
           '<span style="color:#999; font-style:italic;">Chưa có size</span>';
@@ -90,17 +107,19 @@ document.addEventListener("DOMContentLoaded", () => {
           sizeSummary = sp.sizes
             .map(
               (s) =>
-                `<span class="size-badge">${s.tenSize}: <b>${s.soLuongTon}</b></span>`,
+                `<span class="size-badge">${escapeHtml(s.tenSize)}: <b>${Number(s.soLuongTon) || 0}</b></span>`,
             )
             .join(" ");
         }
 
+        const productId = Number(sp.maSP);
+        if (!Number.isSafeInteger(productId) || productId < 1) return;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-                    <td>${sp.maSP}</td>
+                    <td>${productId}</td>
                     <td><img src="${imgSrc}" width="50" style="object-fit:cover; border-radius:4px;"></td>
-                    <td>${sp.tenSP}</td>
-                    <td style="font-weight:bold; color: #2ecc71;">${sp.tongTonKho}</td>
+                    <td>${escapeHtml(sp.tenSP)}</td>
+                    <td style="font-weight:bold; color: #2ecc71;">${Number(sp.tongTonKho)}</td>
                     <td>${sizeSummary}</td>
                     <td><button class="edit-btn" style="cursor:pointer; padding:5px 10px;">Sửa kho</button></td>
                 `;
@@ -115,65 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function attachEditEvents() {
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const sp = e.target.productData;
-        currentEditingProductId = sp.maSP;
-        const modal = document.getElementById("editModal");
-        const container = document.getElementById("sizeInputsContainer");
-        document.getElementById("modalTitle").innerText =
-          `Cập nhật: ${sp.tenSP}`;
-
-        container.innerHTML = "";
-        if (sp.sizes) {
-          sp.sizes.forEach((s) => {
-            container.innerHTML += `
-                            <div class="input-group-row">
-                                <label>Size ${s.tenSize}</label>
-                                <input type="number" class="qty-input" data-size-id="${s.maSize}" value="${s.soLuongTon}" min="0">
-                            </div>`;
-          });
-        }
-        modal.style.display = "block";
-      });
+    document.querySelectorAll(".edit-btn").forEach((button) => {
+      button.textContent = "Phiếu nhập / điều chỉnh";
+      button.addEventListener("click", () => { window.location.href = "/inventory"; });
     });
   }
-
-  const saveBtn = document.getElementById("saveEditBtn");
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async () => {
-      const inputs = document.querySelectorAll(
-        "#sizeInputsContainer .qty-input",
-      );
-      const inventoryUpdate = Array.from(inputs).map((inp) => ({
-        maSize: parseInt(inp.dataset.sizeId),
-        soLuong: parseInt(inp.value) || 0,
-      }));
-
-      try {
-        const res = await fetch(`/api/kho/${currentEditingProductId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ inventory: inventoryUpdate }),
-        });
-        if (res.ok) {
-          alert("Cập nhật thành công!");
-          document.getElementById("editModal").style.display = "none";
-          renderKho();
-        } else {
-          alert("Lỗi cập nhật");
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    });
-  }
-
-  document.getElementById("closeModal").onclick = () =>
-    (document.getElementById("editModal").style.display = "none");
   const searchBtn = document.getElementById("searchBtn");
   if (searchBtn) searchBtn.onclick = () => renderKho();
 
@@ -188,7 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/orders/all", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const orders = await res.json();
+      const responseData = await res.json();
+      const orders = responseData.data ?? responseData;
 
       tbody.innerHTML = "";
       if (!orders || orders.length === 0) {
@@ -198,41 +164,28 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       orders.forEach((order) => {
+        const orderId = Number(order.maDonHang);
+        if (!Number.isSafeInteger(orderId) || orderId < 1) return;
         const tr = document.createElement("tr");
 
         const itemsHtml = order.items
           .map(
             (i) =>
-              `<div style="font-size:13px;">- ${i.tenSP} (${i.tenSize}) x${i.soLuongMua}</div>`,
+              `<div style="font-size:13px;">- ${escapeHtml(i.tenSP)} (${escapeHtml(i.tenSize)}) x${Number(i.soLuongMua)}</div>`,
           )
           .join("");
 
-        const statusSelect = `
-                    <select onchange="updateStatus(${order.maDonHang}, this.value)" 
-                            class="status-select status-${getStatusClass(order.trangThai)}"
-                            ${
-                              order.trangThai === "Đã hủy" ||
-                              order.trangThai === "Hoàn thành"
-                                ? "disabled"
-                                : ""
-                            }>
-                        <option value="Chờ xác nhận" ${order.trangThai === "Chờ xác nhận" ? "selected" : ""}>Chờ xác nhận</option>
-                        <option value="Đang xử lý" ${order.trangThai === "Đang xử lý" ? "selected" : ""}>Đang xử lý</option>
-                        <option value="Đang giao" ${order.trangThai === "Đang giao" ? "selected" : ""}>Đang giao</option>
-                        <option value="Hoàn thành" ${order.trangThai === "Hoàn thành" ? "selected" : ""}>Hoàn thành</option>
-                        <option value="Đã hủy" ${order.trangThai === "Đã hủy" ? "selected" : ""}>Hủy đơn</option>
-                    </select>
-                `;
+        const statusSelect = buildStatusSelect(order);
 
         // [Thay đổi ở đây]: toLocaleString() thay vì toLocaleDateString()
         const formattedDate = new Date(order.ngayDat).toLocaleString("vi-VN");
 
         tr.innerHTML = `
-                    <td>#${order.maDonHang}</td>
+                    <td>#${orderId}</td>
                     <td>
-                        <b>${order.tenNguoiNhan}</b><br>
-                        <small>${order.sdt}</small><br>
-                        <small style="color:#777; font-style:italic;">${order.diaChiGiaoHang}</small>
+                      <b>${escapeHtml(order.tenNguoiNhan)}</b><br>
+                      <small>${escapeHtml(order.sdt)}</small><br>
+                      <small style="color:#777; font-style:italic;">${escapeHtml(order.diaChiGiaoHang)}</small>
                     </td>
                     <td>${formattedDate}</td> 
                     <td>${itemsHtml}</td>
@@ -247,11 +200,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function buildStatusSelect(order) {
+    const transitions = {
+      "Chờ xác nhận": ["Đã xác nhận", "Đã hủy"],
+      "Đã xác nhận": ["Đang giao", "Đã hủy"],
+      "Đang giao": ["Hoàn thành"],
+      "Hoàn thành": [],
+      "Đã hủy": [],
+    };
+    const currentStatus = order.trangThai;
+    const allowedStatuses = transitions[currentStatus] || [];
+
+    if (allowedStatuses.length === 0) {
+      return `<span class="status-select status-${getStatusClass(currentStatus)}">${escapeHtml(currentStatus)}</span>`;
+    }
+
+    const options = [currentStatus, ...allowedStatuses]
+      .map(
+        (status) =>
+          `<option value="${escapeHtml(status)}" ${status === currentStatus ? "selected" : ""}>${escapeHtml(status)}</option>`,
+      )
+      .join("");
+
+    return `<select onchange="updateStatus(${Number(order.maDonHang)}, this.value)" class="status-select status-${getStatusClass(currentStatus)}">${options}</select>`;
+  }
+
   function getStatusClass(status) {
     switch (status) {
       case "Chờ xác nhận":
         return "pending";
-      case "Đang xử lý":
+      case "Đã xác nhận":
         return "processing";
       case "Đang giao":
         return "shipping";
@@ -288,10 +266,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
-        renderStaffOrders();
       } else {
         alert("Lỗi: " + data.message);
       }
+      await renderStaffOrders();
     } catch (err) {
       console.error(err);
       alert("Lỗi kết nối server");
