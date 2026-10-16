@@ -1,13 +1,20 @@
-name: Phase 2-4 Commerce Integrity
+name: Commerce Full Regression
 
 on:
   pull_request:
   push:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  order-integrity:
+  commerce-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       mysql:
         image: mysql:8.0
@@ -43,7 +50,7 @@ jobs:
       - run: npm ci
       - run: npm --prefix backend ci
       - run: npm run check
-      - run: npm run test:backend
+      - run: npm run test:unit
         timeout-minutes: 3
       - run: npm run db:reset
       - run: npm run db:seed:phase2
@@ -56,9 +63,21 @@ jobs:
       - run: npx playwright install --with-deps chromium
         timeout-minutes: 3
       - run: npm run test:browser
-        timeout-minutes: 3
+        timeout-minutes: 5
+      - name: Verify complete evidence and endpoint coverage
+        run: npm run test:evidence
+      - name: Capture dependency advisory snapshots
+        run: |
+          npm audit --json > test-results/npm-audit-root.json || true
+          npm --prefix backend audit --json > test-results/npm-audit-backend.json || true
+      - name: Runtime dependency security baseline
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm --prefix backend audit --omit=dev --audit-level=high
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: commerce-test-evidence
+          retention-days: 14
+          if-no-files-found: error
           path: test-results/

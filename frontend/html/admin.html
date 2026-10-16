@@ -19,6 +19,7 @@
 
     <div class="sidebar">
       <ul>
+        <li data-tab="dashboard"><button type="button">Thống kê</button></li>
         <li data-tab="users" class="active">Quản lý tài khoản</li>
         <li data-tab="categories">Quản lý danh mục</li>
         <li data-tab="products">Quản lý sản phẩm</li>
@@ -26,18 +27,154 @@
     </div>
 
     <div class="content">
+      <section
+        class="tab-content"
+        id="dashboard"
+        style="display: none"
+        aria-labelledby="dashboard-title"
+      >
+        <h1 id="dashboard-title">Thống kê vận hành</h1>
+        <p>
+          Giá trị đơn hoàn tất sau voucher. Đây là doanh số đơn hàng, không phải
+          số tiền đã đối soát. Kỳ báo cáo dùng UTC, đến ngày kết thúc nhưng
+          không bao gồm ngày đó.
+        </p>
+        <form id="dashboard-filter">
+          <label
+            >Từ ngày (UTC) <input type="date" id="dashboard-from" required
+          /></label>
+          <label
+            >Đến ngày (không bao gồm)
+            <input type="date" id="dashboard-to" required
+          /></label>
+          <label
+            >Biểu đồ
+            <select id="dashboard-group">
+              <option value="day">Ngày</option>
+              <option value="week">Tuần</option>
+              <option value="month">Tháng</option>
+            </select></label
+          >
+          <label
+            >Xếp sản phẩm theo
+            <select id="dashboard-sort">
+              <option value="quantity">Số lượng</option>
+              <option value="grossSales">Doanh số gộp</option>
+            </select></label
+          >
+          <button type="submit" id="dashboard-refresh">Tải báo cáo</button>
+        </form>
+        <p id="dashboard-message" role="status" aria-live="polite"></p>
+        <div id="dashboard-results" hidden>
+          <p id="dashboard-generated"></p>
+          <p id="dashboard-warning"></p>
+          <dl class="dashboard-kpis" id="dashboard-kpis"></dl>
+          <h2>Giá trị đơn hoàn tất theo kỳ</h2>
+          <div
+            id="dashboard-chart"
+            aria-label="Biểu đồ giá trị đơn hoàn tất"
+          ></div>
+          <div class="dashboard-table">
+            <table>
+              <caption>
+                Số liệu biểu đồ (VND)
+              </caption>
+              <thead>
+                <tr>
+                  <th>Bắt đầu kỳ UTC</th>
+                  <th>Đơn hoàn tất</th>
+                  <th>Giá trị</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-series"></tbody>
+            </table>
+          </div>
+          <h2>Sản phẩm bán nhiều nhất</h2>
+          <p>
+            Doanh số sản phẩm tính giá mua × số lượng trước phân bổ voucher.
+          </p>
+          <div class="dashboard-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>Số lượng</th>
+                  <th>Doanh số gộp (VND)</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-products"></tbody>
+            </table>
+          </div>
+          <h2>Trạng thái hiện tại của đơn tạo trong kỳ</h2>
+          <ul id="dashboard-statuses"></ul>
+          <h2>Đối soát thanh toán</h2>
+          <p>
+            Danh sách theo ngày tạo đơn trong kỳ. REFUND_REQUIRED cần xử lý
+            ngoài hệ thống; chưa xác nhận hoàn tiền.
+          </p>
+          <label
+            >Lọc ngoại lệ
+            <select id="dashboard-exception">
+              <option value="ALL">Tất cả</option>
+              <option value="REFUND_REQUIRED">Cần hoàn tiền</option>
+              <option value="PAYMENT_MISMATCH">
+                Lệch trạng thái thanh toán
+              </option>
+              <option value="AMOUNT_MISMATCH">Lệch số tiền</option>
+              <option value="MULTIPLE_PAID">Nhiều giao dịch PAID</option>
+              <option value="VOUCHER_MISMATCH">Lệch voucher</option>
+            </select></label
+          >
+          <div class="dashboard-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Đơn</th>
+                  <th>Trạng thái</th>
+                  <th>Thanh toán</th>
+                  <th>Giá trị (VND)</th>
+                  <th>Ngoại lệ</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-exceptions"></tbody>
+            </table>
+          </div>
+          <button type="button" id="dashboard-prev">Trang trước</button
+          ><span id="dashboard-page"></span
+          ><button type="button" id="dashboard-next">Trang sau</button>
+        </div>
+      </section>
       <!-- Quản lý tài khoản -->
       <div class="tab-content" id="users">
         <h2>Danh sách người dùng</h2>
         <p>Tài khoản cần đăng nhập lại sau khi khóa, mở khóa hoặc đổi quyền.</p>
         <p id="user-message" role="status" aria-live="polite"></p>
         <form id="user-filter">
-          <label>Tìm tên / email <input id="user-search" maxlength="100"></label>
-          <label>Trạng thái <select id="user-status"><option value="">Tất cả</option><option value="ACTIVE">Hoạt động</option><option value="LOCKED">Đã khóa</option></select></label>
-          <label>Quyền <select id="user-role"><option value="">Tất cả</option><option>user</option><option>staff</option><option>admin</option></select></label>
+          <label
+            >Tìm tên / email <input id="user-search" maxlength="100"
+          /></label>
+          <label
+            >Trạng thái
+            <select id="user-status">
+              <option value="">Tất cả</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="LOCKED">Đã khóa</option>
+            </select></label
+          >
+          <label
+            >Quyền
+            <select id="user-role">
+              <option value="">Tất cả</option>
+              <option>user</option>
+              <option>staff</option>
+              <option>admin</option>
+            </select></label
+          >
           <button type="submit">Lọc tài khoản</button>
         </form>
-        <label>Lý do thay đổi <input id="user-reason" maxlength="500" required></label>
+        <label
+          >Lý do thay đổi <input id="user-reason" maxlength="500" required
+        /></label>
         <table id="userTable">
           <thead>
             <tr>
@@ -51,7 +188,9 @@
           </thead>
           <tbody></tbody>
         </table>
-        <button id="user-prev" type="button">Trang trước</button><span id="user-page"></span><button id="user-next" type="button">Trang sau</button>
+        <button id="user-prev" type="button">Trang trước</button
+        ><span id="user-page"></span
+        ><button id="user-next" type="button">Trang sau</button>
       </div>
 
       <!-- Quản lý danh mục -->
@@ -271,5 +410,6 @@
     <script src="/js/userManage.js"></script>
     <script src="/js/categoryManage.js"></script>
     <script src="/js/productManage.js"></script>
+    <script src="/js/dashboard.js"></script>
   </body>
 </html>

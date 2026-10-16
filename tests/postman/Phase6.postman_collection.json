@@ -1,0 +1,1203 @@
+{
+  "info": {
+    "name": "Phase 6 Canonical API Coverage [critical regression security P6]",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "P6 login user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-user-a@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"userToken\",body.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 login staff",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-staff@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"staffToken\",body.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 login admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"phase2-admin@example.test\", \"password\": \"Phase2Test!\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"adminToken\",body.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 public products",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Products available\",()=>pm.expect(body.products.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 product categories",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/93003/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 missing product",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 public categories",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 create category",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/categories",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenDanhMuc\": \"P6 isolated category\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"p6CategoryId\",body.categoryId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 category detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{p6CategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Category name\",()=>pm.expect(body.category.tenDanhMuc).to.eql(\"P6 isolated category\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 update category",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{p6CategoryId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenDanhMuc\": \"P6 edited category\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 delete category",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{p6CategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 product staff denied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 create zero stock product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenSP\": \"P6 isolated product\", \"gia\": 3000, \"sizes\": []}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"p6ProductId\",body.productId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 update product",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/{{p6ProductId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tenSP\": \"P6 edited product\", \"gia\": 4000, \"sizes\": []}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 delete unused product",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/{{p6ProductId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/profile"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 invalid profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/profile",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"x\", \"phone\": \"invalid\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 address create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/address",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"address\": \"P6 address\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.environment.set(\"p6AddressId\",body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 address default",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/address/{{p6AddressId}}/default",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 address delete",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/address/{{p6AddressId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 users legacy list",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 users admin list",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 legacy user disable self guard",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/92004",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\": \"P6 self guard\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Self-management rejected\",()=>pm.expect(body.code).to.eql(\"SELF_MANAGEMENT_FORBIDDEN\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 legacy role invalid",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/users/92004/role",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"role\": \"root\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 cart add",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/cart/add",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"maSP\": 93003, \"maSize\": 92901, \"soLuong\": 1}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 cart update",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/cart/update",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"maSP\": 93003, \"maSize\": 92901, \"soLuong\": 2}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 cart oracle",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Quantity persisted\",()=>pm.expect(body.cart.find(i=>i.maSP===93003&&i.maSize===92901).soLuongMua).to.eql(2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 cart remove",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/cart/remove",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"maSP\": 93003, \"maSize\": 92901}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 cart empty after remove",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });",
+              "pm.test(\"Variant removed\",()=>pm.expect(body.cart.some(i=>i.maSP===93003&&i.maSize===92901)).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 payment methods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/orders/payment-methods"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 inventory legacy read",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/kho"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 receipt missing",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/inventory/receipts/2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 low stock",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{staffToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/inventory/low-stock?threshold=5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(true); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 voucher update missing",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/vouchers/2147483647",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"code\": \"P6-MISSING\", \"discountType\": \"FIXED\", \"discountValue\": 500, \"minimumOrderAmount\": 0, \"startAt\": \"2026-01-01T00:00:00Z\", \"endAt\": \"2091-01-01T00:00:00Z\", \"usageLimit\": 10, \"perUserLimit\": 1, \"enabled\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 voucher status missing",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/vouchers/2147483647/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"enabled\": false}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 MoMo create invalid",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/payments/momo/create",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"orderId\": 0}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 MoMo status missing",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{userToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/payments/momo/orders/2147483647/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "P6 MoMo forged callback",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/payments/momo/ipn",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"signature\": \"invalid\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Response contract\", () => { pm.expect(body.success).to.eql(false); pm.expect(body.code).to.be.a(\"string\"); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
