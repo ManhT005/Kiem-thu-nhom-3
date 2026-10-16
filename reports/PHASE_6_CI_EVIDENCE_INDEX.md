@@ -1,17 +1,58 @@
-# CI and evidence index
+# CI and Evidence Index
 
-Workflow: [.github/workflows/commerce-regression.yml](../.github/workflows/commerce-regression.yml), Commerce Full Regression, job commerce-regression, Node 22 + MySQL 8, 25-minute deadline, always artifact upload, 14-day retention. Remote run URL/candidate SHA/artifact URL: PENDING; no new remote run is claimed.
+Workflow: [`.github/workflows/commerce-regression.yml`](../.github/workflows/commerce-regression.yml)  
+Name: **Commerce Full Regression**  
+Runtime: Node 22 + MySQL 8  
+Artifact retention: 14 days
 
-| Artifact path under test-results | Purpose |
+Current verified integration baseline:
+
+```text
+develop@4d42fd767ac949543edc26eb6fd3ac8efd798215
+```
+
+Verified successful runs on 2026-10-16:
+
+- Push run: `38862471238`
+- PR-related run: `38862474567`
+
+Both completed successfully.
+
+## Current CI result
+
+| Layer | Result |
+|---|---:|
+| Unit | 57/57 PASS |
+| Integration | 43/43 PASS |
+| Browser | 11/11 PASS |
+| Newman | 163 requests / 316 assertions PASS |
+| Endpoint coverage | 62/62 |
+| Runtime audit | 0 high/critical vulnerabilities |
+
+## Artifact paths
+
+| Artifact path under `test-results/` | Purpose |
 |---|---|
-| unit.xml / integration.xml / browser.xml | JUnit pass/fail/skipped counts |
-| newman-ClothesShop/Phase3/Phase4/Phase5/Phase6.json and .html | Request status/timing/assertion outcomes; omit bodies/headers/tokens/env |
-| api-summary.json | Manifest completion, runtime, SHA and aggregate suite results |
-| endpoint-coverage.json | Mounted method/path → named collection cases |
-| release-evidence.json | Runtime/DB/checksums/counts/coverage/measured latency and pending external/manual gates |
-| npm-audit-root.json / npm-audit-backend.json | Full dependency-tree advisory snapshots; CI release gate separately blocks high/critical runtime dependencies with `--omit=dev` |
-| server.log | Managed server startup/shutdown errors; no .env dump |
-| browser/ | Failure screenshots/traces; review before public sharing |
-| phase3/phase4/phase5 screenshots | Browser acceptance screenshots with fixture-only UI data |
+| `unit.xml` / `integration.xml` / `browser.xml` | JUnit pass/fail/skipped evidence |
+| `newman-*/.json` and `.html` | API request/assertion outcomes |
+| `api-summary.json` | Runtime, SHA and aggregate API result |
+| `endpoint-coverage.json` | Mounted method/path mapped to collection cases |
+| `release-evidence.json` | Runtime, DB, migration checksums, test counts and acceptance flags |
+| `npm-audit-root.json` | Full root dependency advisory snapshot |
+| `npm-audit-backend.json` | Full backend dependency advisory snapshot |
+| `server.log` | Managed test server lifecycle/errors |
+| `browser/` | Failure screenshots/traces when generated |
+| Phase screenshots | Fixture-only UI acceptance evidence |
 
-Artifacts are ignored by Git; rerun produces them. Store public screenshots after redaction; never share .env, provider keys, DB dumps or raw Newman request/response exports. Fixture passwords exist only in test definitions and are not deployment credentials. Uploaded browser traces can contain test-session tokens; repository artifact access controls and retention apply.
+The CI security release gate separately runs runtime dependency audit with `--omit=dev` and blocks high/critical runtime findings.
+
+## Evidence handling
+
+Generated artifacts are intentionally not committed as permanent raw output. Before public sharing:
+
+- remove secrets, tokens and environment values;
+- review screenshots/traces for session data;
+- never upload `.env`, provider credentials or DB dumps;
+- identify evidence by candidate SHA and CI run ID.
+
+External MoMo evidence is not present in the current CI bundle and remains a separate manual/external acceptance gate.
