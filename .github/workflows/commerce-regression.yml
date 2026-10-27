@@ -13,8 +13,8 @@ concurrency:
 
 jobs:
   commerce-regression:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       mysql:
         image: mysql:8.0
@@ -60,8 +60,9 @@ jobs:
       - name: API regression with health check and cleanup
         run: npm run test:api:managed
         timeout-minutes: 4
-      - run: npx playwright install --with-deps chromium
-        timeout-minutes: 3
+      - name: Install Playwright Chromium dependencies
+        run: npx playwright install --with-deps chromium
+        timeout-minutes: 8
       - run: npm run test:browser
         timeout-minutes: 5
       - name: Verify complete evidence and endpoint coverage
