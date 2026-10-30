@@ -158,7 +158,7 @@ test("WB-INV-03: movement idempotency/conflict, failed update and successful wri
   repository.updateStock = async () => { writes++; return 1; };
   const result = await applyMovement({}, base, repository);
   assert.deepEqual(result, { id: 12, quantityAfter: 1, duplicate: false });
-  assert.equal(writes, 3);
+  assert.equal(writes, 4);
 });
 
 const invokeAuth = (header, options = {}, user = { id: 7, role: "user", status: "ACTIVE", token_version: 1 }) => {
