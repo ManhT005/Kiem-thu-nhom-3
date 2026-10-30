@@ -7,9 +7,12 @@ Status: FOCUSED WHITE-BOX CI PASS (13/13), FULL REGRESSION / RELEASE PENDING. Do
 
 ## Actual CI evidence — 2026-10-30
 
-**White-box CI: PASS on branch commit fbc382114ba1ae21557cfc2a0011e9c36558a34c**.
+**Latest verified White-box CI: PASS.** Run `41022023605` succeeded on 2026-10-30.
 
-- Workflow: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/41021923171
+- Workflow: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/41022023605
+- Branch head: `8c233d4be360c5c0195cab220452f39d7323ea29`; GitHub Actions executed the PR merge ref `58f7ba4b01805fbee3d49cc7525e489f34d64791`.
+- Runner: Ubuntu 24.04, Node.js `22.23.4`, npm `10.9.9`.
+- Job: `123951298845` — completed successfully; JUnit artifact `whitebox-evidence.zip` uploaded (artifact ID `12961668769`).
 - Tests: 13 total, 13 pass, 0 fail, 0 skipped.
 - Coverage for **9 explicitly included files only**: lines 95.49%, branches 88.25%, functions 91.49%.
 - Coverage by file (lines / branches / functions):
@@ -24,6 +27,10 @@ Status: FOCUSED WHITE-BOX CI PASS (13/13), FULL REGRESSION / RELEASE PENDING. Do
   - jobs/payment-expiration.js: 92.11 / 100 / 83.33
 
 These are not whole-backend coverage numbers. MoMo service branch coverage (67.50%) is the largest relative gap. The separate full Commerce Regression workflow must still complete successfully to certify DB, browser, security and evidence gates.
+
+## Repository integration status
+
+As verified on 2026-10-30, PR [#17](https://github.com/ManhT005/Kiem-thu-nhom-3/pull/17) is **closed and not merged**. The test source, runner, workflow and this report remain on `test/whitebox-coverage-20261030`; they are not part of `main`. Reopen the pull request or create a reviewed replacement PR before treating these changes as integrated.
 
 ## 1. Scope clarification
 The application implements ORDER_STATUS.PENDING/CONFIRMED/SHIPPING/COMPLETED/CANCELLED (Vietnamese string values), not PAID/DELIVERED as order-status enum cases. MoMo payment has a separate payment state. Roles are lower-case `admin`, `user`, `staff` (not `ADMIN`/`STAFF_KHO`). Voucher persistence uses `enabled`, `start_at`, `end_at`, `minimum_order_amount`, `maximum_discount_amount`; descriptions in the user-provided scope must be mapped to actual fields.
@@ -75,12 +82,12 @@ Main CI run on 2026-10-27: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/r
 - The final Phase 6 acceptance report describes previous baseline success (57 unit, 43 integration, 11 browser, 316 API assertions) but does not certify this new white-box branch or the failing main run.
 
 ## 5. Coverage and release decisions
-- WB acceptance gate: test process EXIT 0, all 13 named subtests pass, JUnit artifact present, coverage output reviewed and snapshot saved.
+- WB acceptance gate: latest test process EXIT 0; 13 named subtests pass, 0 fail/skip; JUnit artifact uploaded and coverage output recorded in run `41022023605`.
 - Branch coverage should be interpreted per file; a combined coverage percentage must not be described as MC/DC. At least one MC/DC pair for each independent voucher eligibility predicate is demonstrated conceptually; formal MC/DC requires a full condition/pair matrix and structural verification, beyond what is claimed here.
 - Integration gate: run against MySQL 8.0 disposable DB; verify concurrent transaction outcomes and inventory consistency.
 - Security gate: spoofed JWT and invalid MoMo signatures rejected; external MoMo sandbox IPN still requires HTTPS/public callback proof.
 - Browser gate: unblock Chromium installation and run Playwright tests; browser execution not inferred from unit tests.
-- Release status is HOLD until new branch CI is confirmed green, browser/evidence gates complete, and human acceptance is signed.
+- Focused white-box CI is green, but integration/release status remains HOLD until DB integration, browser/evidence gates and human acceptance complete. PR #17 is closed/unmerged, so code review and integration are still required.
 
 ## 6. Known gaps / proposed follow-up
 1. Add explicit LCov or V8 JSON output and set coverage thresholds only after observed baseline; `--experimental-test-coverage` reports line/branch/function summaries but does not imply MC/DC.
