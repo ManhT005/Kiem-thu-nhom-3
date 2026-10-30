@@ -1,7 +1,10 @@
 import { mkdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 import { spawnSync } from "node:child_process";
 
-await mkdir("../test-results/whitebox", { recursive: true });
+await mkdir(resolve(backendRoot, "../test-results/whitebox"), { recursive: true });
 const args = [
   "--test", "--experimental-test-coverage",
   "--test-coverage-include=domain/*.js",
@@ -15,7 +18,7 @@ const args = [
 ];
 const result = spawnSync(process.execPath, args, {
   env: { ...process.env, NODE_ENV: "test", JWT_SECRET: process.env.JWT_SECRET || "whitebox-local-only-secret" },
-  stdio: "inherit", timeout: 120000,
+  cwd: backendRoot, stdio: "inherit", timeout: 120000,
 });
 if (result.error) console.error(result.error.message);
 process.exitCode = result.status ?? 1;
