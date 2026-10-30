@@ -1,0 +1,38 @@
+name: White-box Coverage
+
+on:
+  push:
+    branches:
+      - "test/whitebox-*"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/whitebox-coverage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  whitebox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      JWT_SECRET: whitebox-ci-test-secret
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm --prefix backend ci
+      - name: Execute white-box tests and capture coverage
+        run: node backend/scripts/run-whitebox.js
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whitebox-evidence
+          path: test-results/whitebox/
+          if-no-files-found: warn
