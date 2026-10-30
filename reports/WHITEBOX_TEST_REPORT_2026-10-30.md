@@ -3,7 +3,27 @@
 Date: 2026-10-30 | Repository: ManhT005/Kiem-thu-nhom-3
 Baseline: main @ 59cc5c89c6ddbaaa131f640b3008f4bc2ef2a0df
 Test branch: test/whitebox-coverage-20261030
-Status: TESTS SUBMITTED TO CI; final pass/coverage requires workflow evidence. Do not equate existing historical reports with this run.
+Status: FOCUSED WHITE-BOX CI PASS (13/13), FULL REGRESSION / RELEASE PENDING. Do not equate existing historical reports with this run.
+
+## Actual CI evidence — 2026-10-30
+
+**White-box CI: PASS on branch commit fbc382114ba1ae21557cfc2a0011e9c36558a34c**.
+
+- Workflow: https://github.com/ManhT005/Kiem-thu-nhom-3/actions/runs/41021923171
+- Tests: 13 total, 13 pass, 0 fail, 0 skipped.
+- Coverage for **9 explicitly included files only**: lines 95.49%, branches 88.25%, functions 91.49%.
+- Coverage by file (lines / branches / functions):
+  - domain/order-status.js: 100 / 100 / 100
+  - domain/voucher.js: 100 / 91.55 / 100
+  - domain/inventory.js: 94.03 / 89.09 / 91.67
+  - domain/reporting.js: 100 / 84.93 / 88.89
+  - services/inventory.service.js: 100 / 100 / 100
+  - services/momo.service.js: 90.18 / 67.50 / 100
+  - middleware/authenticate.middleware.js: 100 / 95.65 / 66.67
+  - middleware/authorize.middleware.js: 100 / 100 / 100
+  - jobs/payment-expiration.js: 92.11 / 100 / 83.33
+
+These are not whole-backend coverage numbers. MoMo service branch coverage (67.50%) is the largest relative gap. The separate full Commerce Regression workflow must still complete successfully to certify DB, browser, security and evidence gates.
 
 ## 1. Scope clarification
 The application implements ORDER_STATUS.PENDING/CONFIRMED/SHIPPING/COMPLETED/CANCELLED (Vietnamese string values), not PAID/DELIVERED as order-status enum cases. MoMo payment has a separate payment state. Roles are lower-case `admin`, `user`, `staff` (not `ADMIN`/`STAFF_KHO`). Voucher persistence uses `enabled`, `start_at`, `end_at`, `minimum_order_amount`, `maximum_discount_amount`; descriptions in the user-provided scope must be mapped to actual fields.
