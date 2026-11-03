@@ -52,6 +52,10 @@ jobs:
       - run: npm run check
       - run: npm run test:unit
         timeout-minutes: 3
+      - name: Measure inventory white-box branch coverage
+        working-directory: backend
+        run: node --experimental-test-coverage --test tests/inventory-movement-whitebox-personal.test.js
+        timeout-minutes: 2
       - run: npm run db:reset
       - run: npm run db:seed:phase2
       - run: npm run test:integration
