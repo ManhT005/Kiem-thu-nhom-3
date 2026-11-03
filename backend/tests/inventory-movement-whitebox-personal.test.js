@@ -207,3 +207,32 @@ test("WB-INV-19: inventory identifiers and delta are normalized before processin
   assert.equal(repository.calls[0].maSP, 7);
   assert.equal(repository.calls[0].maSize, 2);
 });
+
+
+test("WB-INV-20: a non-integer product ID is rejected before repository access", async () => {
+  const repository = fakeRepository();
+  await expectCode(applyMovement({}, baseInput({ maSP: "7 OR 1=1" }), repository),
+    "VALIDATION_ERROR", 400);
+  assert.deepEqual(repository.calls, []);
+});
+
+test("WB-INV-21: a size ID below the minimum boundary is rejected", async () => {
+  const repository = fakeRepository();
+  await expectCode(applyMovement({}, baseInput({ maSize: 0 }), repository), "VALIDATION_ERROR", 400);
+  assert.deepEqual(repository.calls, []);
+});
+
+test("WB-INV-22: a delta above MAX_STOCK is rejected during normalization", async () => {
+  const repository = fakeRepository();
+  await expectCode(applyMovement({}, baseInput({
+    delta: MAX_STOCK + 1, eventType: "ADJUSTMENT", referenceType: "ADJUSTMENT",
+  }), repository), "VALIDATION_ERROR", 400);
+  assert.deepEqual(repository.calls, []);
+});
+
+test("WB-INV-23: a reason longer than 500 characters is rejected before repository access", async () => {
+  const repository = fakeRepository();
+  await expectCode(applyMovement({}, baseInput({ reason: "x".repeat(501) }), repository),
+    "VALIDATION_ERROR", 400);
+  assert.deepEqual(repository.calls, []);
+});
