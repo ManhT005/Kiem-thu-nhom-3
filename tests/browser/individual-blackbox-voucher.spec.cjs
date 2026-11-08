@@ -89,7 +89,7 @@ test("BB-V-01: voucher preview requires authentication", async ({ request }) => 
   const response = await request.post("/api/vouchers/validate", {
     data: { voucherCode: "BB-MISSING", items: [{ maSP: PRODUCT_ID, maSize: SIZE_ID, soLuongMua: 1 }] },
   });
-  await expectApiError(response, 401, "UNAUTHORIZED");
+  await expectApiError(response, 401, "UNAUTHENTICATED");
 });
 
 test("BB-V-02: staff cannot preview a customer voucher", async ({ request }) => {
